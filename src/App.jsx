@@ -977,7 +977,7 @@ function App() {
   }
 
   // ==========================================
-  // --- SISTEMA PRINCIPAL (REDISEÑO) ---
+  // --- SISTEMA PRINCIPAL  ---
   // ==========================================
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-100">
@@ -1424,7 +1424,7 @@ function App() {
                        
                        <div className="flex gap-4 text-xs font-bold text-slate-500 uppercase mb-6"><span>{p.species}</span>•<span>{p.breed || 'Cruza'}</span>•<span>{p.sex || 'Sexo N/E'}</span>•<span>{p.color || 'Color N/E'}</span></div>
                        
-                       {/* --- NUEVO: BOTONES DE RECETA RÁPIDA E HISTORIAL --- */}
+                       {/* --- BOTONES DE RECETA RÁPIDA E HISTORIAL --- */}
                        <div className="flex gap-2 border-b border-slate-100 pb-6 mb-6">
                           <button onClick={() => printSurgeryAuth(p, selectedOwner)} className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-all font-bold text-sm flex items-center gap-1" title="Generar Autorización Quirúrgica"><Clipboard size={16}/> Auth. Cirugía</button>
                           
