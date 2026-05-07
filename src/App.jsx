@@ -1264,61 +1264,61 @@ function App() {
   // ==========================================
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex justify-center items-center p-6">
-        <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[2rem] shadow-2xl border border-white/10 w-full max-w-md">
-          <div className="flex justify-center mb-8">
-            <div className="bg-teal-500 p-5 rounded-3xl shadow-[0_0_20px_rgba(13,148,136,0.4)]">
-              <Lock size={44} className="text-white" />
+      <div className="min-h-screen font-sans text-slate-900 selection:bg-teal-100 relative flex justify-center items-center p-6 z-0">
+        
+        {/* FONDO ANIMADO BOKEH Y MASCOTAS (Consistente con el interior) */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-slate-50">
+          <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/40 rounded-full blur-[100px] mix-blend-multiply"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/30 rounded-full blur-[120px] mix-blend-multiply"></div>
+          <div className="absolute top-[20%] right-[15%] w-[30vw] h-[30vw] bg-amber-200/40 rounded-full blur-[90px] mix-blend-multiply"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTllOWU5Ii8+PC9zdmc+')] opacity-50"></div>
+          
+          <PawPrint className="absolute top-[15%] left-[15%] text-teal-600/10 -rotate-12 w-32 h-32" />
+          <Cat className="absolute bottom-[20%] left-[10%] text-rose-600/10 rotate-12 w-48 h-48" />
+          <Dog className="absolute bottom-[15%] right-[15%] text-teal-600/10 -rotate-12 w-40 h-40" />
+        </div>
+
+        {/* TARJETA DE LOGIN CRISTAL */}
+        <div className="bg-white/70 backdrop-blur-2xl p-10 rounded-[3rem] shadow-2xl border border-white/50 w-full max-w-md animate-in zoom-in-95 duration-700">
+          
+          <div className="flex justify-center mb-6">
+            <div className="w-32 h-32 rounded-[2rem] overflow-hidden shadow-xl border-4 border-white bg-white flex items-center justify-center p-1 relative">
+              <img src="/Dogs_&_Cats.jpeg" alt="Dogs & Cats Logo" className="w-full h-full object-contain" />
             </div>
           </div>
-          <h2 className="text-4xl font-black text-white text-center mb-2">
-            {authMode === "login" ? "Bienvenido" : "Registro"}
+          
+          <h2 className="text-3xl font-black text-slate-800 text-center mb-1 tracking-tight">
+            {authMode === "login" ? "DOGS AND CATS" : "Nuevo Admin"}
           </h2>
-          <p className="text-slate-400 text-center mb-10 font-medium">
-            Panel de Control Veterinaria
+          <p className="text-teal-600 text-center mb-8 font-bold uppercase tracking-widest text-xs">
+            {authMode === "login" ? "Acceso al Sistema" : "Registro de Sistema"}
           </p>
 
-          <form
-            onSubmit={authMode === "login" ? handleLogin : handleRegister}
-            className="flex flex-col gap-6"
-          >
+          <form onSubmit={authMode === "login" ? handleLogin : handleRegister} className="flex flex-col gap-5">
             <div className="group relative">
-              <User
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-teal-400 transition-colors"
-                size={20}
-              />
+              <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors" size={20} />
               <input
                 type="text"
                 placeholder="Usuario"
                 value={authData.username}
-                onChange={(e) =>
-                  setAuthData({ ...authData, username: e.target.value })
-                }
+                onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
                 required
-                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white transition-all"
+                className="w-full pl-14 pr-5 py-4 bg-white/60 border border-white/50 rounded-2xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 outline-none text-slate-800 font-bold placeholder:text-slate-400 transition-all shadow-inner"
               />
             </div>
             <div className="group relative">
-              <Key
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-teal-400 transition-colors"
-                size={20}
-              />
+              <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors" size={20} />
               <input
                 type="password"
                 placeholder="Contraseña"
                 value={authData.password}
-                onChange={(e) =>
-                  setAuthData({ ...authData, password: e.target.value })
-                }
+                onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
                 required
-                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white transition-all"
+                className="w-full pl-14 pr-5 py-4 bg-white/60 border border-white/50 rounded-2xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 outline-none text-slate-800 font-bold placeholder:text-slate-400 transition-all shadow-inner"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-teal-500 hover:bg-teal-400 hover:scale-[1.02] active:scale-95 text-slate-900 font-bold py-4 rounded-2xl transition-all shadow-lg text-lg"
-            >
-              {authMode === "login" ? "Iniciar Sesión" : "Crear Administrador"}
+            <button type="submit" className="w-full mt-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-teal-500/30 text-lg flex justify-center items-center gap-2">
+              {authMode === "login" ? <><Lock size={20}/> Entrar</> : <><User size={20}/> Registrar</>}
             </button>
           </form>
 
@@ -1327,11 +1327,9 @@ function App() {
               setAuthMode(authMode === "login" ? "register" : "login");
               setAuthData({ username: "", password: "" });
             }}
-            className="w-full mt-8 text-slate-400 hover:text-white transition-colors text-sm font-medium"
+            className="w-full mt-8 text-slate-500 hover:text-teal-600 transition-colors text-sm font-bold"
           >
-            {authMode === "login"
-              ? "¿No tienes cuenta? Regístrate aquí"
-              : "Volver al Inicio"}
+            {authMode === "login" ? "¿No tienes cuenta? Crea una aquí" : "Volver a Iniciar Sesión"}
           </button>
         </div>
       </div>
