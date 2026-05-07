@@ -877,30 +877,16 @@ function App() {
         const d = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
         const t = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
         await axios.post(`${API_BASE}/appointments/`, {
-          date: d,
-          time: t,
-          reason: "Emisión de Receta (Visita Rápida)",
-          status: "Realizada",
-          pet_id: pet.id,
-          prescription_text: text,
+          date: d, time: t, reason: "Emisión de Receta (Visita Rápida)", status: "Realizada", pet_id: pet.id, prescription_text: text,
         });
-      } catch (err) {
-        console.error("Error guardando receta rápida", err);
-      }
+      } catch (err) { console.error("Error guardando receta rápida", err); }
     } else {
       try {
-        await axios.put(`${API_BASE}/appointments/${appt.id}`, {
-          ...appt,
-          pet_id: appt.pet_id,
-          prescription_text: text,
-        });
-      } catch (err) {
-        console.error("Error guardando receta en cita", err);
-      }
+        await axios.put(`${API_BASE}/appointments/${appt.id}`, { ...appt, pet_id: appt.pet_id, prescription_text: text });
+      } catch (err) { console.error("Error guardando receta en cita", err); }
     }
 
-    fetchData();
-    triggerSync();
+    fetchData(); triggerSync();
     if (selectedOwner) {
       const resOwners = await axios.get(`${API_BASE}/owners/`);
       setSelectedOwner(resOwners.data.find((o) => o.id === selectedOwner.id));
@@ -913,25 +899,28 @@ function App() {
       <head>
           <title>Receta Médica - ${pet.name}</title>
           <style>
-              body { font-family: 'Arial', sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; }
-              .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; border-bottom: 3px solid #0d9488; padding-bottom: 15px;}
+              @page { size: letter; margin: 1cm; }
+              
+              body { font-family: 'Arial', sans-serif; color: #1e293b; max-width: 800px; margin: 0 auto; padding: 10px; font-size: 13px; }
+              .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 15px; border-bottom: 3px solid #0d9488; padding-bottom: 10px;}
               .logo { width: 140px; flex-shrink: 0; }
               .header-content { flex-grow: 1; padding-left: 20px; display: flex; flex-direction: column; justify-content: center;}
-              .title { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 5px; color: #0f172a; }
+              .title { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 5px; color: #0f172a; }
               .doctor-info { text-align: center; font-size: 14px; font-weight: bold; color: #475569;}
-              .cedula-area { text-align: right; font-size: 12px; color: #475569; display: flex; flex-direction: column; align-items: flex-end; margin-top: 10px;}
+              .cedula-area { text-align: right; font-size: 12px; color: #475569; display: flex; flex-direction: column; align-items: flex-end; margin-top: 5px;}
               
-              .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; font-size: 14px; background-color: #f0fdfa; padding: 20px; border-radius: 10px; border: 1px solid #ccfbf1; }
-              .info-item { border-bottom: 1px dashed #99f6e4; padding-bottom: 5px; }
-              .info-label { font-weight: bold; color: #0d9488; display: inline-block; width: 140px;}
+              .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 13px; background-color: #f0fdfa; padding: 15px; border-radius: 10px; border: 1px solid #ccfbf1; }
+              .info-item { border-bottom: 1px dashed #99f6e4; padding-bottom: 3px; }
+              .info-label { font-weight: bold; color: #0d9488; display: inline-block; width: 130px;}
               
-              .prescription-body { min-height: 400px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 30px; white-space: pre-wrap; font-size: 16px; line-height: 1.6; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
-              .firma-area { text-align: right; margin-bottom: 40px; padding-right: 40px; }
+              .prescription-body { min-height: 350px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 20px; white-space: pre-wrap; font-size: 15px; line-height: 1.5; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+              
+              .firma-area { text-align: right; margin-bottom: 20px; padding-right: 40px; }
               .firma-line { border-top: 1px solid #1e293b; width: 200px; display: inline-block; text-align: center; padding-top: 5px; font-weight: bold; font-size: 14px;}
               
-              .footer { display: flex; justify-content: space-between; font-size: 11px; border-top: 3px solid #ccfbf1; padding-top: 15px; color: #0f172a; }
+              .footer { display: flex; justify-content: space-between; font-size: 11px; border-top: 3px solid #ccfbf1; padding-top: 10px; color: #0f172a; }
               .footer-box { display: flex; gap: 10px; align-items: flex-start;}
-              .footer-icon { font-size: 18px; }
+              .footer-icon { font-size: 16px; }
           </style>
       </head>
       <body>
@@ -1087,23 +1076,26 @@ function App() {
       <head>
           <title>Consentimiento Informado - ${pet.name}</title>
           <style>
-              body { font-family: 'Arial', sans-serif; padding: 40px; color: #000; max-width: 800px; margin: 0 auto; line-height: 1.6; font-size: 14px; text-align: justify; }
+              @page { size: letter; margin: 1cm; }
               
-              /* --- NUEVO ESTILO DEL ENCABEZADO TIPO MEMBRETE --- */
-              .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 30px; }
-              .logo { width: 180px; flex-shrink: 0; }
-              .header-content { flex-grow: 1; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; padding-top: 15px;}
-              .title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 8px; letter-spacing: 0.5px; }
-              .doctor-info { text-align: center; font-size: 15px; margin-bottom: 25px; }
-              .date-row { text-align: right; font-size: 15px; margin-right: 20px;}
+              body { font-family: 'Arial', sans-serif; color: #000; max-width: 800px; margin: 0 auto; line-height: 1.3; font-size: 15px; text-align: justify; }
+              
+              .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+              .logo { width: 140px; flex-shrink: 0; }
+              .header-content { flex-grow: 1; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; padding-top: 5px;}
+              .title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.5px; }
+              .doctor-info { text-align: center; font-size: 13px; margin-bottom: 15px; }
+              .date-row { text-align: right; font-size: 13px; margin-right: 20px;}
 
-              .content-text { margin-bottom: 15px; }
-              ul { margin-top: 10px; margin-bottom: 15px; padding-left: 40px; }
-              li { margin-bottom: 8px; }
-              .signatures { display: flex; justify-content: space-between; margin-top: 80px; text-align: center; }
+              .content-text { margin-bottom: 10px; }
+              ul { margin-top: 5px; margin-bottom: 10px; padding-left: 40px; }
+              li { margin-bottom: 5px; }
+              
+              /* Redujimos el espacio gigante de las firmas para que no empuje a la hoja 2 */
+              .signatures { display: flex; justify-content: space-between; margin-top: 50px; text-align: center; }
               .sign-box { width: 40%; }
               .sign-line { border-top: 1px solid #000; padding-top: 5px; font-weight: bold; }
-              .footer-quote { text-align: center; margin-top: 50px; font-style: italic; font-weight: bold; font-size: 12px; }
+              .footer-quote { text-align: center; margin-top: 30px; font-style: italic; font-weight: bold; font-size: 11px; }
           </style>
       </head>
       <body>
