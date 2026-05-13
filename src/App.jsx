@@ -37,7 +37,114 @@ import {
   Clock,
 } from "lucide-react";
 
+// ==========================================
+// --- SALA DE ESPERA INTELIGENTE (CLIENTES) ---
+// ==========================================
+const RegistroPublico = ({ API_BASE }) => {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [owner, setOwner] = useState({ name: "", phone: "", address: "" });
+  const [pet, setPet] = useState({ name: "", species: "Perro", breed: "", sex: "Macho (M)", color: "", birth_date: "" });
+
+  const submitForm = async () => {
+    setLoading(true);
+    try {
+      // 1. Guardar primero al dueño
+      const resOwner = await axios.post(`${API_BASE}/owners/`, owner);
+      // 2. Guardar a la mascota ligándola al ID del dueño recién creado
+      await axios.post(`${API_BASE}/pets/`, { ...pet, owner_id: resOwner.data.id });
+      setStep(3); // Pantalla de éxito
+    } catch (err) {
+      alert("Error al guardar. Por favor, avisa en recepción.");
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen font-sans text-slate-900 relative flex justify-center items-center p-6 z-0 bg-slate-50">
+      {/* FONDO ANIMADO (Mantiene la identidad de la clínica) */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/40 rounded-full blur-[100px] mix-blend-multiply"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/30 rounded-full blur-[120px] mix-blend-multiply"></div>
+        <div className="absolute top-[20%] right-[15%] w-[30vw] h-[30vw] bg-amber-200/40 rounded-full blur-[90px] mix-blend-multiply"></div>
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-2xl p-8 rounded-[2rem] shadow-2xl border border-white/50 w-full max-w-md animate-in zoom-in-95 duration-500">
+         <div className="flex justify-center mb-4">
+            <img src="/Dogs_&_Cats.jpeg" alt="Dogs & Cats Logo" className="w-24 h-24 rounded-2xl shadow-md border-2 border-white object-contain bg-white" />
+         </div>
+         <h2 className="text-2xl font-black text-center text-slate-800 mb-1">Sala de Espera</h2>
+         <p className="text-teal-600 text-center font-bold text-sm mb-6 uppercase tracking-wider">
+           {step === 1 ? "1. Datos del Titular" : step === 2 ? "2. Datos del Paciente" : "¡Registro Exitoso!"}
+         </p>
+
+         {/* PASO 1: DATOS DEL DUEÑO */}
+         {step === 1 && (
+           <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="flex flex-col gap-4">
+              <input type="text" placeholder="Tu Nombre Completo" required value={owner.name} onChange={e=>setOwner({...owner, name: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
+              <input type="tel" placeholder="Teléfono a 10 dígitos" required value={owner.phone} onChange={e=>setOwner({...owner, phone: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
+              <input type="text" placeholder="Domicilio (Opcional)" value={owner.address} onChange={e=>setOwner({...owner, address: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
+              <button type="submit" className="mt-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
+                Siguiente Paso 🐾
+              </button>
+           </form>
+         )}
+
+         {/* PASO 2: DATOS DE LA MASCOTA */}
+         {step === 2 && (
+           <form onSubmit={(e) => { e.preventDefault(); submitForm(); }} className="flex flex-col gap-3">
+              <input type="text" placeholder="Nombre de la Mascota" required value={pet.name} onChange={e=>setPet({...pet, name: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner" />
+              <div className="grid grid-cols-2 gap-3">
+                <select value={pet.species} onChange={e=>setPet({...pet, species: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner">
+                  <option>Perro</option><option>Gato</option><option>Otro</option>
+                </select>
+                <select value={pet.sex} onChange={e=>setPet({...pet, sex: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner">
+                  <option>Macho (M)</option><option>Hembra (H)</option>
+                </select>
+              </div>
+              <input type="text" placeholder="Raza" required value={pet.breed} onChange={e=>setPet({...pet, breed: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner" />
+              <input type="text" placeholder="Color" required value={pet.color} onChange={e=>setPet({...pet, color: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner" />
+              <div>
+                <label className="text-xs font-bold text-slate-500 ml-2">Fecha de Nacimiento (Aprox)</label>
+                <input type="date" required value={pet.birth_date} onChange={e=>setPet({...pet, birth_date: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner" />
+              </div>
+              <div className="flex gap-3 mt-4">
+                <button type="button" onClick={() => setStep(1)} className="w-1/3 bg-slate-200 text-slate-700 font-black py-4 rounded-xl hover:bg-slate-300 transition-all active:scale-95">Atrás</button>
+                <button type="submit" disabled={loading} className="w-2/3 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
+                  {loading ? 'Guardando...' : 'Finalizar Registro 🚀'}
+                </button>
+              </div>
+           </form>
+         )}
+
+         {/* PASO 3: PANTALLA DE ÉXITO */}
+         {step === 3 && (
+           <div className="text-center py-6 animate-in fade-in duration-500">
+             <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border-4 border-white">
+               <span className="text-5xl">✅</span>
+             </div>
+             <h3 className="text-2xl font-black text-slate-800 mb-2">¡Todo Listo!</h3>
+             <p className="text-slate-600 font-medium mb-8">Tus datos y los de <strong>{pet.name}</strong> ya están seguros en nuestro sistema.</p>
+             <button onClick={() => { setStep(1); setOwner({name:"", phone:"", address:""}); setPet({name:"", species:"Perro", breed:"", sex:"Macho (M)", color:"", birth_date:""}); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-xl transition-all active:scale-95">
+               Registrar otra mascota
+             </button>
+           </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
 function App() {
+
+  const API_BASE = "http://localhost:8000";
+
+  // --- INTERCEPTOR DE RUTA PUBLICA ---
+  if(window.location.pathname === '/registro'){
+    return <RegistroPublico API_BASE={API_BASE}/>;
+  }
+
   // --- ESTADOS DE SEGURIDAD ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -47,8 +154,7 @@ function App() {
   // --- ESTADOS GENERALES ---
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_BASE = "http://localhost:8000";
-
+  
   const [newOwner, setNewOwner] = useState({
     name: "",
     address: "",
@@ -101,6 +207,9 @@ function App() {
     payment_method: "Efectivo",
   });
   const [cart, setCart] = useState([]);
+
+  // --- TRANFORMADOR DE FOLIOS ---
+  const formatExpediente = (id) => `DC-${String(id).padStart(4, "0")}`;
 
   // --- ESTADOS PARA MODALES EXTRAS ---
   const [prescriptionModal, setPrescriptionModal] = useState({
@@ -877,16 +986,30 @@ function App() {
         const d = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
         const t = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
         await axios.post(`${API_BASE}/appointments/`, {
-          date: d, time: t, reason: "Emisión de Receta (Visita Rápida)", status: "Realizada", pet_id: pet.id, prescription_text: text,
+          date: d,
+          time: t,
+          reason: "Emisión de Receta (Visita Rápida)",
+          status: "Realizada",
+          pet_id: pet.id,
+          prescription_text: text,
         });
-      } catch (err) { console.error("Error guardando receta rápida", err); }
+      } catch (err) {
+        console.error("Error guardando receta rápida", err);
+      }
     } else {
       try {
-        await axios.put(`${API_BASE}/appointments/${appt.id}`, { ...appt, pet_id: appt.pet_id, prescription_text: text });
-      } catch (err) { console.error("Error guardando receta en cita", err); }
+        await axios.put(`${API_BASE}/appointments/${appt.id}`, {
+          ...appt,
+          pet_id: appt.pet_id,
+          prescription_text: text,
+        });
+      } catch (err) {
+        console.error("Error guardando receta en cita", err);
+      }
     }
 
-    fetchData(); triggerSync();
+    fetchData();
+    triggerSync();
     if (selectedOwner) {
       const resOwners = await axios.get(`${API_BASE}/owners/`);
       setSelectedOwner(resOwners.data.find((o) => o.id === selectedOwner.id));
@@ -935,6 +1058,7 @@ function App() {
 
           <div class="patient-info">
               <div class="info-item"><span class="info-label">Nombre de la Mascota:</span> ${pet.name}</div>
+              <div class="info-item"><span class="info-label">No. Expediente:</span> <strong style="color:#0d9488;">${formatExpediente(pet.id)}</strong></div>
               <div class="info-item"><span class="info-label">Fecha:</span> ${new Date().toLocaleDateString()}</div>
               <div class="info-item"><span class="info-label">Raza:</span> ${pet.breed || "N/E"}</div>
               <div class="info-item"><span class="info-label">Sexo:</span> ${pet.sex || "N/E"}</div>
@@ -973,7 +1097,10 @@ function App() {
       selectedOwner.pets.forEach((p) => {
         petsHtml += `
           <div class="pet-section">
-            <div class="pet-header">🐾 Paciente: ${p.name}</div>
+            <div class="pet-header" style="display: flex; justify-content: space-between;">
+              <span>🐾 Paciente: ${p.name}</span>
+              <span>Folio: ${formatExpediente(p.id)}</span>
+            </div>
             <div class="pet-info">
               <span><b>Especie:</b> ${p.species}</span>
               <span><b>Raza:</b> ${p.breed || "N/E"}</span>
@@ -1064,49 +1191,123 @@ function App() {
 
   const printSurgeryAuth = (pet, owner) => {
     const printWindow = window.open("", "_blank");
-    const today = new Date().toLocaleDateString("es-MX", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    const today = new Date().toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
+    
+    // Usamos nuestra función transformadora para el folio
+    const folio = `DC-${String(pet.id).padStart(4, '0')}`;
+
+    // Calculamos la edad aproximada si hay fecha de nacimiento
+    let edad = "N/E";
+    if (pet.birth_date) {
+      const birthYear = new Date(pet.birth_date).getFullYear();
+      const currentYear = new Date().getFullYear();
+      edad = (currentYear - birthYear) + " años";
+    }
 
     const htmlTemplate = `
       <!DOCTYPE html>
       <html>
       <head>
-          <title>Consentimiento Informado - ${pet.name}</title>
+          <title>Ficha y Consentimiento - ${pet.name}</title>
           <style>
+              /* Forzamos a que sea tamaño carta y ajustamos los márgenes al límite */
               @page { size: letter; margin: 1cm; }
               
-              body { font-family: 'Arial', sans-serif; color: #000; max-width: 800px; margin: 0 auto; line-height: 1.3; font-size: 15px; text-align: justify; }
+              /* Redujimos la letra a 10px para que el texto original quepa perfecto */
+              body { font-family: 'Arial', sans-serif; color: #000; max-width: 800px; margin: 0 auto; line-height: 1.2; font-size: 14px; text-align: justify; }
               
-              .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
-              .logo { width: 140px; flex-shrink: 0; }
-              .header-content { flex-grow: 1; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; padding-top: 5px;}
-              .title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.5px; }
-              .doctor-info { text-align: center; font-size: 13px; margin-bottom: 15px; }
-              .date-row { text-align: right; font-size: 13px; margin-right: 20px;}
+              .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+              .logo { width: 120px; flex-shrink: 0; }
+              .header-content { flex-grow: 1; padding-left: 15px; display: flex; flex-direction: column; justify-content: center;}
+              .main-title { text-align: center; font-size: 15px; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; }
+              .doctor-info { text-align: center; font-size: 11px; margin-bottom: 8px; font-weight: bold; color: #333; }
+              .date-row { display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; font-weight: bold;}
 
-              .content-text { margin-bottom: 10px; }
-              ul { margin-top: 5px; margin-bottom: 10px; padding-left: 40px; }
-              li { margin-bottom: 5px; }
+              /* --- ESTILOS DE LA FICHA CLÍNICA --- */
+              .ficha-container { border: 2px solid #000; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+              .form-row { display: flex; margin-bottom: 6px; align-items: flex-end; }
+              .form-label { font-weight: bold; white-space: nowrap; margin-right: 10px; font-size: 11px; }
+              .form-line { border-bottom: 1px solid #000; flex-grow: 1; padding-bottom: 1px; padding-left: 5px; font-size: 11px; color: #1e293b; }
+              .form-col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 6px;}
+
+              /* --- ESTILOS DEL CONSENTIMIENTO --- */
+              .sub-title { text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 8px; text-decoration: underline;}
+              .content-text { margin-bottom: 6px; }
+              ul { margin-top: 4px; margin-bottom: 6px; padding-left: 25px; }
+              li { margin-bottom: 3px; }
               
-              /* Redujimos el espacio gigante de las firmas para que no empuje a la hoja 2 */
-              .signatures { display: flex; justify-content: space-between; margin-top: 50px; text-align: center; }
+              /* --- ESTILOS FINANCIEROS Y FIRMAS --- */
+              .financial-box { display: flex; justify-content: space-around; margin: 15px 0; padding: 8px; border: 1px dashed #000; font-weight: bold; font-size: 12px; background-color: #f8fafc;}
+              .finance-line { display: inline-block; border-bottom: 1px solid #000; width: 70px; }
+
+              .signatures { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; }
               .sign-box { width: 40%; }
               .sign-line { border-top: 1px solid #000; padding-top: 5px; font-weight: bold; }
-              .footer-quote { text-align: center; margin-top: 30px; font-style: italic; font-weight: bold; font-size: 11px; }
+              .footer-quote { text-align: center; margin-top: 15px; font-style: italic; font-weight: bold; font-size: 9px; }
           </style>
       </head>
       <body>
           <div class="header">
               <img src="/Dogs_&_Cats.jpeg" alt="Dogs and Cats Logo" class="logo" />
               <div class="header-content">
-                  <div class="title">CONSENTIMIENTO INFORMADO</div>
-                  <div class="doctor-info">M.V.Z. MARÍA EUGENIA PEÑA ACOSTA CED. PROFESIONAL. 6992889</div>
-                  <div class="date-row">Fecha: &nbsp;&nbsp;<strong>${today}</strong></div>
+                  <div class="main-title">FICHA CLÍNICA Y AUTORIZACIÓN DE PROCEDIMIENTO</div>
+                  <div class="doctor-info">M.V.Z. MARÍA EUGENIA PEÑA ACOSTA | CED. PROFESIONAL. 6992889</div>
+                  <div class="date-row">
+                      <div>Expediente: <span style="text-decoration: underline;">${folio}</span></div>
+                      <div>Fecha: <span style="text-decoration: underline;">${today}</span></div>
+                  </div>
               </div>
           </div>
+
+          <div class="ficha-container">
+              <div class="form-row">
+                  <div class="form-label">Nombre del Propietario</div>
+                  <div class="form-line">${owner.name}</div>
+              </div>
+              <div class="form-row">
+                  <div class="form-label">Domicilio</div>
+                  <div class="form-line">${owner.address || '_________________________________________'}</div>
+              </div>
+              <div class="form-row">
+                  <div class="form-label">Teléfono</div>
+                  <div class="form-line">${owner.phone || '_________________________________________'}</div>
+              </div>
+              
+              <div class="form-col-2" style="margin-top: 10px;">
+                  <div class="form-row" style="margin-bottom:0;">
+                      <div class="form-label">Nombre de la mascota</div>
+                      <div class="form-line">${pet.name}</div>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                      <div class="form-label">Especie</div>
+                      <div class="form-line">${pet.species}</div>
+                  </div>
+              </div>
+
+              <div class="form-col-2">
+                  <div class="form-row" style="margin-bottom:0;">
+                      <div class="form-label">Raza</div>
+                      <div class="form-line">${pet.breed || '________________'}</div>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                      <div class="form-label">Color</div>
+                      <div class="form-line">${pet.color || '________________'}</div>
+                  </div>
+              </div>
+
+              <div class="form-col-2">
+                  <div class="form-row" style="margin-bottom:0;">
+                      <div class="form-label">Sexo</div>
+                      <div class="form-line">${pet.sex || '________________'}</div>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                      <div class="form-label">Edad (aprox)</div>
+                      <div class="form-line">${edad}</div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="sub-title">CONSENTIMIENTO INFORMADO</div>
 
           <div class="content-text">
               Yo, <strong>${owner.name}</strong>, propietario(a) de la mascota <strong>${pet.name}</strong> autorizo de manera libre y consciente la realización del procedimiento quirúrgico y la aplicación de anestésicos, medicamentos y materiales necesarios para la atención de mi mascota, en las instalaciones del Consultorio Veterinario Dogs & Cats.
@@ -1146,6 +1347,12 @@ function App() {
 
           <div class="content-text" style="font-weight: bold;">
               Asumo plena responsabilidad de las decisiones tomadas y libero de toda responsabilidad al Consultorio Veterinario Dogs & Cats, a su personal médico y técnico, por cualquier complicación o desenlace no favorable derivado del procedimiento o de condiciones médicas no detectadas previamente.
+          </div>
+
+          <div class="financial-box">
+              <div>Total: $<span class="finance-line"></span></div>
+              <div>A cuenta: $<span class="finance-line"></span></div>
+              <div>Restan: $<span class="finance-line"></span></div>
           </div>
 
           <div class="signatures">
@@ -1209,11 +1416,23 @@ function App() {
   const filteredOwners = owners
     .filter((owner) => {
       const searchLower = searchTerm.toLowerCase();
-      return (
+
+      // 1. Revisa si coincide con el nombre, teléfono o dirección del dueño
+      const matchDueño =
         owner.name.toLowerCase().includes(searchLower) ||
         (owner.address && owner.address.toLowerCase().includes(searchLower)) ||
-        (owner.phone && owner.phone.includes(searchLower))
-      );
+        (owner.phone && owner.phone.includes(searchLower));
+
+      // 2. Revisa si coincide con el nombre de ALGUNA de sus mascotas
+      const matchMascota =
+        owner.pets &&
+        owner.pets.some(
+          (pet) =>
+            pet.name.toLowerCase().includes(searchLower) ||
+            formatExpediente(pet.id).toLowerCase().includes(searchLower),
+        );
+
+      return matchDueño || matchMascota;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1257,14 +1476,13 @@ function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen font-sans text-slate-900 selection:bg-teal-100 relative flex justify-center items-center p-6 z-0">
-        
         {/* FONDO ANIMADO BOKEH Y MASCOTAS (Consistente con el interior) */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-slate-50">
           <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/40 rounded-full blur-[100px] mix-blend-multiply"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/30 rounded-full blur-[120px] mix-blend-multiply"></div>
           <div className="absolute top-[20%] right-[15%] w-[30vw] h-[30vw] bg-amber-200/40 rounded-full blur-[90px] mix-blend-multiply"></div>
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTllOWU5Ii8+PC9zdmc+')] opacity-50"></div>
-          
+
           <PawPrint className="absolute top-[15%] left-[15%] text-teal-600/10 -rotate-12 w-32 h-32" />
           <Cat className="absolute bottom-[20%] left-[10%] text-rose-600/10 rotate-12 w-48 h-48" />
           <Dog className="absolute bottom-[15%] right-[15%] text-teal-600/10 -rotate-12 w-40 h-40" />
@@ -1272,13 +1490,16 @@ function App() {
 
         {/* TARJETA DE LOGIN CRISTAL */}
         <div className="bg-white/70 backdrop-blur-2xl p-10 rounded-[3rem] shadow-2xl border border-white/50 w-full max-w-md animate-in zoom-in-95 duration-700">
-          
           <div className="flex justify-center mb-6">
             <div className="w-32 h-32 rounded-[2rem] overflow-hidden shadow-xl border-4 border-white bg-white flex items-center justify-center p-1 relative">
-              <img src="/Dogs_&_Cats.jpeg" alt="Dogs & Cats Logo" className="w-full h-full object-contain" />
+              <img
+                src="/Dogs_&_Cats.jpeg"
+                alt="Dogs & Cats Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
-          
+
           <h2 className="text-3xl font-black text-slate-800 text-center mb-1 tracking-tight">
             {authMode === "login" ? "DOGS AND CATS" : "Nuevo Admin"}
           </h2>
@@ -1286,31 +1507,55 @@ function App() {
             {authMode === "login" ? "Acceso al Sistema" : "Registro de Sistema"}
           </p>
 
-          <form onSubmit={authMode === "login" ? handleLogin : handleRegister} className="flex flex-col gap-5">
+          <form
+            onSubmit={authMode === "login" ? handleLogin : handleRegister}
+            className="flex flex-col gap-5"
+          >
             <div className="group relative">
-              <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors" size={20} />
+              <User
+                className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"
+                size={20}
+              />
               <input
                 type="text"
                 placeholder="Usuario"
                 value={authData.username}
-                onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
+                onChange={(e) =>
+                  setAuthData({ ...authData, username: e.target.value })
+                }
                 required
                 className="w-full pl-14 pr-5 py-4 bg-white/60 border border-white/50 rounded-2xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 outline-none text-slate-800 font-bold placeholder:text-slate-400 transition-all shadow-inner"
               />
             </div>
             <div className="group relative">
-              <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors" size={20} />
+              <Key
+                className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"
+                size={20}
+              />
               <input
                 type="password"
                 placeholder="Contraseña"
                 value={authData.password}
-                onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
+                onChange={(e) =>
+                  setAuthData({ ...authData, password: e.target.value })
+                }
                 required
                 className="w-full pl-14 pr-5 py-4 bg-white/60 border border-white/50 rounded-2xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 outline-none text-slate-800 font-bold placeholder:text-slate-400 transition-all shadow-inner"
               />
             </div>
-            <button type="submit" className="w-full mt-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-teal-500/30 text-lg flex justify-center items-center gap-2">
-              {authMode === "login" ? <><Lock size={20}/> Entrar</> : <><User size={20}/> Registrar</>}
+            <button
+              type="submit"
+              className="w-full mt-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-teal-500/30 text-lg flex justify-center items-center gap-2"
+            >
+              {authMode === "login" ? (
+                <>
+                  <Lock size={20} /> Entrar
+                </>
+              ) : (
+                <>
+                  <User size={20} /> Registrar
+                </>
+              )}
             </button>
           </form>
 
@@ -1321,7 +1566,9 @@ function App() {
             }}
             className="w-full mt-8 text-slate-500 hover:text-teal-600 transition-colors text-sm font-bold"
           >
-            {authMode === "login" ? "¿No tienes cuenta? Crea una aquí" : "Volver a Iniciar Sesión"}
+            {authMode === "login"
+              ? "¿No tienes cuenta? Crea una aquí"
+              : "Volver a Iniciar Sesión"}
           </button>
         </div>
       </div>
@@ -1537,7 +1784,7 @@ function App() {
                   <Search className="text-slate-400" size={20} />
                   <input
                     type="text"
-                    placeholder="Buscar por nombre o teléfono..."
+                    placeholder="Buscar por dueño, mascota, teléfono o folio..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="bg-transparent border-none outline-none w-full font-bold text-slate-700"
@@ -2665,8 +2912,11 @@ function App() {
                       className="p-6 border-2 border-slate-50 rounded-[2rem] hover:border-teal-100 transition-all"
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <h4 className="text-2xl font-black text-slate-800">
+                        <h4 className="text-2xl font-black text-slate-800 flex items-center gap-3">
                           {p.name}
+                          <span className="bg-teal-100 text-teal-800 px-3 py-1 rounded-xl text-xs font-black tracking-widest border border-teal-200">
+                            EXP: {formatExpediente(p.id)}
+                          </span>
                         </h4>
                         <div className="flex gap-2">
                           <button
