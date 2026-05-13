@@ -74,7 +74,7 @@ const RegistroPublico = ({ API_BASE }) => {
          <div className="flex justify-center mb-4">
             <img src="/Dogs_&_Cats.jpeg" alt="Dogs & Cats Logo" className="w-24 h-24 rounded-2xl shadow-md border-2 border-white object-contain bg-white" />
          </div>
-         <h2 className="text-2xl font-black text-center text-slate-800 mb-1">Sala de Espera</h2>
+         <h2 className="text-2xl font-black text-center text-slate-800 mb-1">Registro de clientes y peludos</h2>
          <p className="text-teal-600 text-center font-bold text-sm mb-6 uppercase tracking-wider">
            {step === 1 ? "1. Datos del Titular" : step === 2 ? "2. Datos del Paciente" : "¡Registro Exitoso!"}
          </p>
@@ -84,7 +84,7 @@ const RegistroPublico = ({ API_BASE }) => {
            <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="flex flex-col gap-4">
               <input type="text" placeholder="Tu Nombre Completo" required value={owner.name} onChange={e=>setOwner({...owner, name: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
               <input type="tel" placeholder="Teléfono a 10 dígitos" required value={owner.phone} onChange={e=>setOwner({...owner, phone: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
-              <input type="text" placeholder="Domicilio (Opcional)" value={owner.address} onChange={e=>setOwner({...owner, address: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
+              <input type="text" placeholder="Domicilio (ej. calle,#,colonia)" value={owner.address} onChange={e=>setOwner({...owner, address: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
               <button type="submit" className="mt-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
                 Siguiente Paso 🐾
               </button>
