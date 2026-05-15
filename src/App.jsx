@@ -43,17 +43,26 @@ import {
 const RegistroPublico = ({ API_BASE }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  // ✨ NUEVO ESTADO PARA SABER SI YA ES CLIENTE
+  const [isReturningCustomer, setIsReturningCustomer] = useState(false); 
+  
   const [owner, setOwner] = useState({ name: "", phone: "", address: "" });
   const [pet, setPet] = useState({ name: "", species: "Perro", breed: "", sex: "Macho (M)", color: "", birth_date: "" });
 
   const submitForm = async () => {
     setLoading(true);
     try {
-      // 1. Guardar primero al dueño
-      const resOwner = await axios.post(`${API_BASE}/owners/`, owner);
-      // 2. Guardar a la mascota ligándola al ID del dueño recién creado
-      await axios.post(`${API_BASE}/pets/`, { ...pet, owner_id: resOwner.data.id });
-      setStep(3); // Pantalla de éxito
+      let currentOwnerId = owner.id; 
+
+      if (!currentOwnerId) {
+        const resOwner = await axios.post(`${API_BASE}/owners/`, owner);
+        currentOwnerId = resOwner.data.id;
+        setOwner({ ...owner, id: currentOwnerId }); 
+      }
+
+      await axios.post(`${API_BASE}/pets/`, { ...pet, owner_id: currentOwnerId });
+      
+      setStep(3); 
     } catch (err) {
       alert("Error al guardar. Por favor, avisa en recepción.");
       console.error(err);
@@ -63,7 +72,7 @@ const RegistroPublico = ({ API_BASE }) => {
 
   return (
     <div className="min-h-screen font-sans text-slate-900 relative flex justify-center items-center p-6 z-0 bg-slate-50">
-      {/* FONDO ANIMADO (Mantiene la identidad de la clínica) */}
+      {/* FONDO ANIMADO */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/40 rounded-full blur-[100px] mix-blend-multiply"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/30 rounded-full blur-[120px] mix-blend-multiply"></div>
@@ -74,7 +83,7 @@ const RegistroPublico = ({ API_BASE }) => {
          <div className="flex justify-center mb-4">
             <img src="/Dogs_&_Cats.jpeg" alt="Dogs & Cats Logo" className="w-24 h-24 rounded-2xl shadow-md border-2 border-white object-contain bg-white" />
          </div>
-         <h2 className="text-2xl font-black text-center text-slate-800 mb-1">Registro de clientes y peludos</h2>
+         <h2 className="text-2xl font-black text-center text-slate-800 mb-1">Sala de Espera</h2>
          <p className="text-teal-600 text-center font-bold text-sm mb-6 uppercase tracking-wider">
            {step === 1 ? "1. Datos del Titular" : step === 2 ? "2. Datos del Paciente" : "¡Registro Exitoso!"}
          </p>
@@ -82,10 +91,34 @@ const RegistroPublico = ({ API_BASE }) => {
          {/* PASO 1: DATOS DEL DUEÑO */}
          {step === 1 && (
            <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="flex flex-col gap-4">
+              
+              {/* ✨ INTERRUPTOR ELEGANTE: NUEVO VS RECURRENTE */}
+              <div className="flex gap-2 p-1 bg-slate-200/50 rounded-xl mb-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsReturningCustomer(false)}
+                  className={`w-1/2 py-2.5 rounded-lg font-black text-sm transition-all ${!isReturningCustomer ? 'bg-white shadow-md text-teal-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Nuevo Registro
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setIsReturningCustomer(true)}
+                  className={`w-1/2 py-2.5 rounded-lg font-black text-sm transition-all ${isReturningCustomer ? 'bg-white shadow-md text-teal-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Ya soy cliente
+                </button>
+              </div>
+
               <input type="text" placeholder="Tu Nombre Completo" required value={owner.name} onChange={e=>setOwner({...owner, name: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
-              <input type="tel" placeholder="Teléfono a 10 dígitos" required value={owner.phone} onChange={e=>setOwner({...owner, phone: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
-              <input type="text" placeholder="Domicilio (ej. calle,#,colonia)" value={owner.address} onChange={e=>setOwner({...owner, address: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
-              <button type="submit" className="mt-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
+              <input type="tel" placeholder="Teléfono celular (10 dígitos)" required value={owner.phone} onChange={e=>setOwner({...owner, phone: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
+              
+              {/* ✨ MAGIA: Si NO es cliente recurrente, le pedimos el domicilio. Si ya lo es, lo ocultamos. */}
+              {!isReturningCustomer && (
+                <input type="text" placeholder="Domicilio (Opcional)" value={owner.address} onChange={e=>setOwner({...owner, address: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner animate-in fade-in slide-in-from-top-2" />
+              )}
+
+              <button type="submit" className="mt-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
                 Siguiente Paso 🐾
               </button>
            </form>
@@ -353,31 +386,61 @@ function App() {
   }, [newAppt.date]);
 
   const safeBookedTimes = Array.isArray(bookedTimes) ? bookedTimes : [];
+
+  // 1. Obtenemos el día y la hora de este preciso instante
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
   const availableTimeSlots = allTimeSlots.filter((time) => {
+    // 2. ¿Alguien más ya agendó esta hora?
     const isBooked = safeBookedTimes.some((booked) => booked.startsWith(time));
-    return !isBooked || time === newAppt.time;
+
+    // 3. ¿La hora ya pasó? (Solo aplica si están agendando para HOY)
+    let isPast = false;
+    if (newAppt.date === todayStr) {
+      const [slotHour, slotMinute] = time.split(":").map(Number);
+      // Si la hora del bloque es menor a la hora actual, o es la misma hora pero con menos minutos = ya pasó
+      if (slotHour < currentHour || (slotHour === currentHour && slotMinute <= currentMinute)) {
+        isPast = true;
+      }
+    }
+
+    // 4. Mostramos la hora solo si: (No está ocupada Y No ha pasado) O (Es la hora de una cita que estamos editando)
+    return (!isBooked && !isPast) || time === newAppt.time;
   });
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      // 1. Limpiamos espacios y pasamos a minúsculas DESDE AQUÍ
+      const cleanUsername = authData.username.toLowerCase().trim();
+
       const params = new URLSearchParams();
-      params.append("username", authData.username.toLowerCase());
-      params.append("password", authData.password);
+      params.append("username", cleanUsername);
+      params.append("password", authData.password.trim());
 
       const res = await axios.post(`${API_BASE}/login/`, params);
       const token = res.data.access_token;
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      const loggedUser = authData.username.toLowerCase();
-      setCurrentUser(loggedUser);
+      // 2. MAGIA PARA RECONOCER A MARU PEÑA
+      let displayUser = cleanUsername;
+      if (cleanUsername === "maru peña" || cleanUsername === "maru pena") {
+         displayUser = "Maru Peña"; // Se verá siempre elegante en el menú
+      } else {
+         displayUser = cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1);
+      }
+
+      setCurrentUser(displayUser);
       setIsAuthenticated(true);
       setAuthData({ username: "", password: "" });
 
       localStorage.setItem("vet_token", token);
-      localStorage.setItem("vet_user", loggedUser);
+      localStorage.setItem("vet_user", displayUser);
 
-      Toast.fire({ icon: "success", title: `¡Bienvenido, ${loggedUser}!` });
+      Toast.fire({ icon: "success", title: `¡Bienvenida, ${displayUser}!` });
 
       fetchData();
       fetchProducts();
@@ -394,9 +457,12 @@ function App() {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
+      // Limpiamos los espacios también al registrar
+      const cleanUsername = authData.username.toLowerCase().trim();
+      
       await axios.post(`${API_BASE}/register/`, {
-        username: authData.username.toLowerCase(),
-        password: authData.password,
+        username: cleanUsername,
+        password: authData.password.trim(),
       });
       Swal.fire({
         icon: "success",
@@ -502,7 +568,6 @@ function App() {
 
   const handleAddOrUpdateProduct = async (e) => {
     e.preventDefault();
-    if (currentUser !== "admin") return;
     try {
       let qty =
         newProduct.category === "Servicio"
@@ -585,7 +650,6 @@ function App() {
   };
 
   const handleDeleteGroup = async (group) => {
-    if (currentUser !== "admin") return;
     const result = await Swal.fire({
       title: "¿Borrar todo el artículo?",
       text: "Se eliminarán todos sus lotes del sistema.",
@@ -1501,7 +1565,7 @@ function App() {
           </div>
 
           <h2 className="text-3xl font-black text-slate-800 text-center mb-1 tracking-tight">
-            {authMode === "login" ? "DOGS AND CATS" : "Nuevo Admin"}
+            {authMode === "login" ? "DOGS AND CATS" : "Nuevo Usuario"}
           </h2>
           <p className="text-teal-600 text-center mb-8 font-bold uppercase tracking-widest text-xs">
             {authMode === "login" ? "Acceso al Sistema" : "Registro de Sistema"}
@@ -2153,198 +2217,197 @@ function App() {
               </div>
             )}
 
-            {currentUser === "admin" && (
-              <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-8">
-                <h3 className="text-2xl font-black mb-6 flex items-center gap-3 text-slate-800">
-                  <Archive className="text-teal-600" />{" "}
-                  {editingGroupItems
-                    ? "Actualizar Artículo General"
-                    : "Agregar Stock / Nuevo Artículo"}
-                </h3>
-                {editingGroupItems && (
-                  <p className="text-amber-600 font-bold mb-4 text-sm bg-amber-50 p-4 rounded-xl border border-amber-100">
-                    Nota: Al editar aquí actualizarás el precio y categoría de{" "}
-                    <b>todos los lotes</b> de este producto. Para registrar
-                    stock nuevo con otra caducidad, dale a Cancelar y guarda un
-                    "Nuevo Artículo" escribiendo el nombre exactamente igual.
-                  </p>
+            {/* SECCIÓN DE AGREGAR PRODUCTO (AHORA VISIBLE PARA TODOS) */}
+            <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-8">
+              <h3 className="text-2xl font-black mb-6 flex items-center gap-3 text-slate-800">
+                <Archive className="text-teal-600" />{" "}
+                {editingGroupItems
+                  ? "Actualizar Artículo General"
+                  : "Agregar Stock / Nuevo Artículo"}
+              </h3>
+              {editingGroupItems && (
+                <p className="text-amber-600 font-bold mb-4 text-sm bg-amber-50 p-4 rounded-xl border border-amber-100">
+                  Nota: Al editar aquí actualizarás el precio y categoría de{" "}
+                  <b>todos los lotes</b> de este producto. Para registrar
+                  stock nuevo con otra caducidad, dale a Cancelar y guarda un
+                  "Nuevo Artículo" escribiendo el nombre exactamente igual.
+                </p>
+              )}
+
+              <form
+                onSubmit={handleAddOrUpdateProduct}
+                className="flex flex-wrap gap-4 items-end"
+              >
+                <div className="flex-grow min-w-[150px]">
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Categoría
+                  </label>
+                  <select
+                    value={newProduct.category}
+                    onChange={(e) =>
+                      setNewProduct({
+                        ...newProduct,
+                        category: e.target.value,
+                      })
+                    }
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600"
+                  >
+                    <option value="Medicamento">Medicamento</option>
+                    <option value="Alimento">Alimento</option>
+                    <option value="Accesorios">Accesorios</option>
+                    <option value="Vacuna">Vacuna</option>
+                    <option value="Servicio">
+                      Servicio (Baño, Corte...)
+                    </option>
+                  </select>
+                </div>
+
+                <div className="flex-grow-[2] min-w-[200px]">
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Baño SPA"
+                    value={newProduct.name}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, name: e.target.value })
+                    }
+                    disabled={editingGroupItems !== null}
+                    required
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="w-28">
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Precio $
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newProduct.price}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, price: e.target.value })
+                    }
+                    required
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
+                  />
+                </div>
+
+                {!editingGroupItems && newProduct.category !== "Servicio" && (
+                  <>
+                    <div className="w-24">
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Cant.
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newProduct.quantity}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            quantity: e.target.value,
+                          })
+                        }
+                        required
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
+                      />
+                    </div>
+                    <div className="w-40">
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Caducidad
+                      </label>
+                      <input
+                        type="date"
+                        value={newProduct.expiration_date}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            expiration_date: e.target.value,
+                          })
+                        }
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-500"
+                      />
+                    </div>
+                  </>
                 )}
 
-                <form
-                  onSubmit={handleAddOrUpdateProduct}
-                  className="flex flex-wrap gap-4 items-end"
-                >
-                  <div className="flex-grow min-w-[150px]">
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Categoría
-                    </label>
-                    <select
-                      value={newProduct.category}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          category: e.target.value,
-                        })
-                      }
-                      className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600"
-                    >
-                      <option value="Medicamento">Medicamento</option>
-                      <option value="Alimento">Alimento</option>
-                      <option value="Accesorios">Accesorios</option>
-                      <option value="Vacuna">Vacuna</option>
-                      <option value="Servicio">
-                        Servicio (Baño, Corte...)
-                      </option>
-                    </select>
-                  </div>
-
-                  <div className="flex-grow-[2] min-w-[200px]">
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Nombre
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Baño SPA"
-                      value={newProduct.name}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, name: e.target.value })
-                      }
-                      disabled={editingGroupItems !== null}
-                      required
-                      className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 disabled:opacity-50"
-                    />
-                  </div>
-
-                  <div className="w-28">
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Precio $
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newProduct.price}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, price: e.target.value })
-                      }
-                      required
-                      className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
-                    />
-                  </div>
-
-                  {!editingGroupItems && newProduct.category !== "Servicio" && (
-                    <>
-                      <div className="w-24">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                          Cant.
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={newProduct.quantity}
-                          onChange={(e) =>
-                            setNewProduct({
-                              ...newProduct,
-                              quantity: e.target.value,
-                            })
-                          }
-                          required
-                          className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
-                        />
-                      </div>
-                      <div className="w-40">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                          Caducidad
-                        </label>
-                        <input
-                          type="date"
-                          value={newProduct.expiration_date}
-                          onChange={(e) =>
-                            setNewProduct({
-                              ...newProduct,
-                              expiration_date: e.target.value,
-                            })
-                          }
-                          className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-500"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {newProduct.category !== "Servicio" && (
-                    <>
-                      <div className="w-28">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                          Unidad
-                        </label>
-                        <select
-                          value={newProduct.unit}
-                          onChange={(e) =>
-                            setNewProduct({
-                              ...newProduct,
-                              unit: e.target.value,
-                            })
-                          }
-                          className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600"
-                        >
-                          <option value="piezas">pzas</option>
-                          <option value="kg">kg</option>
-                          <option value="g">g</option>
-                          <option value="L">L</option>
-                          <option value="ml">ml</option>
-                        </select>
-                      </div>
-                      <div className="w-28">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                          Min. Stock
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={newProduct.min_stock}
-                          onChange={(e) =>
-                            setNewProduct({
-                              ...newProduct,
-                              min_stock: e.target.value,
-                            })
-                          }
-                          required
-                          className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      className={`px-10 py-4 rounded-2xl font-black transition-all shadow-lg text-white ${editingGroupItems ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-900 hover:bg-teal-600"}`}
-                    >
-                      {editingGroupItems ? "Actualizar Todo" : "Guardar Stock"}
-                    </button>
-                    {editingGroupItems && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingGroupItems(null);
+                {newProduct.category !== "Servicio" && (
+                  <>
+                    <div className="w-28">
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Unidad
+                      </label>
+                      <select
+                        value={newProduct.unit}
+                        onChange={(e) =>
                           setNewProduct({
-                            category: "Medicamento",
-                            name: "",
-                            quantity: "",
-                            unit: "piezas",
-                            price: "",
-                            min_stock: "",
-                            expiration_date: "",
-                          });
-                        }}
-                        className="px-6 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all"
+                            ...newProduct,
+                            unit: e.target.value,
+                          })
+                        }
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600"
                       >
-                        Cancelar
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </section>
-            )}
+                        <option value="piezas">pzas</option>
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="L">L</option>
+                        <option value="ml">ml</option>
+                      </select>
+                    </div>
+                    <div className="w-28">
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Min. Stock
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newProduct.min_stock}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            min_stock: e.target.value,
+                          })
+                        }
+                        required
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className={`px-10 py-4 rounded-2xl font-black transition-all shadow-lg text-white ${editingGroupItems ? "bg-amber-500 hover:bg-amber-600" : "bg-slate-900 hover:bg-teal-600"}`}
+                  >
+                    {editingGroupItems ? "Actualizar Todo" : "Guardar Stock"}
+                  </button>
+                  {editingGroupItems && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingGroupItems(null);
+                        setNewProduct({
+                          category: "Medicamento",
+                          name: "",
+                          quantity: "",
+                          unit: "piezas",
+                          price: "",
+                          min_stock: "",
+                          expiration_date: "",
+                        });
+                      }}
+                      className="px-6 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </form>
+            </section>
 
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
               <div className="p-6 border-b border-slate-50 flex items-center gap-4">
@@ -2366,9 +2429,7 @@ function App() {
                       <th className="p-6">Stock Sumado</th>
                       <th className="p-6">Caducidades Lotes</th>
                       <th className="p-6">Precio</th>
-                      {currentUser === "admin" && (
-                        <th className="p-6 text-center">Acciones</th>
-                      )}
+                      <th className="p-6 text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -2416,30 +2477,28 @@ function App() {
                         <td className="p-6 font-black text-slate-800 text-lg">
                           ${group.price}
                         </td>
-                        {currentUser === "admin" && (
-                          <td className="p-6 text-center flex justify-center gap-2">
-                            <button
-                              onClick={() => handleEditGroupClick(group)}
-                              className="p-3 text-amber-500 hover:bg-amber-50 rounded-2xl transition-all"
-                              title="Editar info general"
-                            >
-                              <Edit size={20} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteGroup(group)}
-                              className="p-3 text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
-                              title="Borrar TODOS los lotes de este artículo"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </td>
-                        )}
+                        <td className="p-6 text-center flex justify-center gap-2">
+                          <button
+                            onClick={() => handleEditGroupClick(group)}
+                            className="p-3 text-amber-500 hover:bg-amber-50 rounded-2xl transition-all"
+                            title="Editar info general"
+                          >
+                            <Edit size={20} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGroup(group)}
+                            className="p-3 text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
+                            title="Borrar TODOS los lotes de este artículo"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {groupedInventory.length === 0 && (
                       <tr>
                         <td
-                          colSpan={currentUser === "admin" ? "6" : "5"}
+                          colSpan="6"
                           className="p-10 text-center text-slate-500 italic"
                         >
                           No se encontraron artículos en el inventario.
@@ -2462,7 +2521,7 @@ function App() {
                 Venta
               </h2>
               <div className="flex gap-4">
-                {currentUser === "admin" && (
+                {currentUser === "Maru Peña" && (
                   <button
                     onClick={() =>
                       window.open(`${API_BASE}/reports/sales-weekly/`, "_blank")
@@ -2677,7 +2736,7 @@ function App() {
                 </section>
 
                 <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                  {currentUser === "admin" && (
+                  {currentUser === "Maru Peña" && (
                     <div className="flex-1 bg-slate-900 p-6 rounded-[2.5rem] text-white shadow-xl flex flex-col justify-center relative overflow-hidden">
                       <div className="absolute right-[-10px] top-[-10px] opacity-10">
                         <Wallet size={80} />
@@ -2947,7 +3006,10 @@ function App() {
                         <span>{p.species}</span>•
                         <span>{p.breed || "Cruza"}</span>•
                         <span>{p.sex || "Sexo N/E"}</span>•
-                        <span>{p.color || "Color N/E"}</span>
+                        <span>{p.color || "Color N/E"}</span>•
+                        <span className="text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md text-xs">
+                          🗓️ REGISTRO: {p.registration_date || "N/D"}
+                        </span>
                       </div>
 
                       <div className="flex gap-2 border-b border-slate-100 pb-6 mb-6">
