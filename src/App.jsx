@@ -171,7 +171,7 @@ const RegistroPublico = ({ API_BASE }) => {
 
 function App() {
 
-  const API_BASE = "http://localhost:8000";
+  const API_BASE = "https://dogs-and-cats-api.onrender.com";
 
   // --- INTERCEPTOR DE RUTA PUBLICA ---
   if(window.location.pathname === '/registro'){
@@ -364,7 +364,7 @@ function App() {
 
   useEffect(() => {
     if (newAppt.date) {
-      fetch(`http://127.0.0.1:8000/appointments/booked-times/${newAppt.date}`)
+      fetch(`${API_BASE}/appointments/booked-times/${newAppt.date}`)
         .then((res) => {
           if (!res.ok) throw new Error("Red falló");
           return res.json();
