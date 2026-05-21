@@ -569,20 +569,10 @@ function App() {
   const handleAddOrUpdateProduct = async (e) => {
     e.preventDefault();
     try {
-      let qty =
-        newProduct.category === "Servicio"
-          ? 999999
-          : parseFloat(newProduct.quantity);
-      let minStock =
-        newProduct.category === "Servicio"
-          ? 0
-          : parseFloat(newProduct.min_stock);
-      let expDate =
-        newProduct.category === "Servicio"
-          ? null
-          : newProduct.expiration_date || null;
-      let unit =
-        newProduct.category === "Servicio" ? "servicio" : newProduct.unit;
+      let qty = newProduct.category === "Servicio" ? 999999 : parseFloat(newProduct.quantity || 0);
+      let minStock = newProduct.category === "Servicio" ? 0 : parseFloat(newProduct.min_stock);
+      let expDate = newProduct.category === "Servicio" ? null : newProduct.expiration_date || null;
+      let unit = newProduct.category === "Servicio" ? "servicio" : newProduct.unit;
 
       if (editingGroupItems) {
         for (let item of editingGroupItems) {
@@ -594,17 +584,24 @@ function App() {
             min_stock: minStock,
           });
         }
+        if(qty > 0){
+          await axios.post(`${API_BASE}/products/`,{
+            category: newProduct.category,
+             name: newProduct.name, // Usa el mismo nombre exacto para que se agrupe
+             quantity: qty,
+             unit: unit,
+             price: parseFloat(newProduct.price),
+             min_stock: minStock,
+             expiration_date: expDate,
+          });
+        }
         Toast.fire({ icon: "success", title: "Artículo actualizado" });
       } else {
         const baseName = newProduct.name.trim();
         const exists = products.some(
-          (p) =>
-            p.name.split("_@@_")[0].trim().toLowerCase() ===
-            baseName.toLowerCase(),
+          (p) => p.name.split("_@@_")[0].trim().toLowerCase() === baseName.toLowerCase(),
         );
-        const finalName = exists
-          ? `${baseName}_@@_${Math.random().toString(36).substr(2, 5)}`
-          : baseName;
+        const finalName = exists ? `${baseName}_@@_${Math.random().toString(36).substr(2, 5)}`: baseName;
 
         await axios.post(`${API_BASE}/products/`, {
           category: newProduct.category,
@@ -670,7 +667,14 @@ function App() {
         triggerSync();
         Toast.fire({ icon: "success", title: "Artículo eliminado" });
       } catch (err) {
-        Swal.fire("Error", "No se pudo eliminar", "error");
+        const mensajeBackend = err.response?.data?.detail || "No se pudo eliminar el artículo debido a un error de conexión.";
+        
+        Swal.fire({
+          icon: "error",
+          title: "Acción Denegada",
+          text: mensajeBackend,
+          confirmButtonColor: "#0d9488"
+        });
       }
     }
   };
@@ -2295,23 +2299,21 @@ function App() {
                   />
                 </div>
 
-                {!editingGroupItems && newProduct.category !== "Servicio" && (
+                {newProduct.category !== "Servicio" && (
                   <>
-                    <div className="w-24">
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                        Cant.
+                    <div className="w-32">
+                      <label className="block text-xs font-black uppercase tracking-widest mb-2 ml-1 text-teal-600">
+                        {editingGroupItems ? "+ Sumar Stock" : "Cant."}
                       </label>
                       <input
                         type="number"
                         step="0.01"
                         value={newProduct.quantity}
                         onChange={(e) =>
-                          setNewProduct({
-                            ...newProduct,
-                            quantity: e.target.value,
-                          })
+                          setNewProduct({ ...newProduct, quantity: e.target.value })
                         }
-                        required
+                        required={!editingGroupItems}
+                        placeholder={editingGroupItems ? "Opcional" : "Ej. 10"}
                         className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-center"
                       />
                     </div>
@@ -2323,10 +2325,7 @@ function App() {
                         type="date"
                         value={newProduct.expiration_date}
                         onChange={(e) =>
-                          setNewProduct({
-                            ...newProduct,
-                            expiration_date: e.target.value,
-                          })
+                          setNewProduct({ ...newProduct, expiration_date: e.target.value })
                         }
                         className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-500"
                       />
