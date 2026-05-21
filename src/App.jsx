@@ -44,25 +44,35 @@ const RegistroPublico = ({ API_BASE }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   // ✨ NUEVO ESTADO PARA SABER SI YA ES CLIENTE
-  const [isReturningCustomer, setIsReturningCustomer] = useState(false); 
-  
+  const [isReturningCustomer, setIsReturningCustomer] = useState(false);
+
   const [owner, setOwner] = useState({ name: "", phone: "", address: "" });
-  const [pet, setPet] = useState({ name: "", species: "Perro", breed: "", sex: "Macho (M)", color: "", birth_date: "" });
+  const [pet, setPet] = useState({
+    name: "",
+    species: "Perro",
+    breed: "",
+    sex: "Macho (M)",
+    color: "",
+    birth_date: "",
+  });
 
   const submitForm = async () => {
     setLoading(true);
     try {
-      let currentOwnerId = owner.id; 
+      let currentOwnerId = owner.id;
 
       if (!currentOwnerId) {
         const resOwner = await axios.post(`${API_BASE}/owners/`, owner);
         currentOwnerId = resOwner.data.id;
-        setOwner({ ...owner, id: currentOwnerId }); 
+        setOwner({ ...owner, id: currentOwnerId });
       }
 
-      await axios.post(`${API_BASE}/pets/`, { ...pet, owner_id: currentOwnerId });
-      
-      setStep(3); 
+      await axios.post(`${API_BASE}/pets/`, {
+        ...pet,
+        owner_id: currentOwnerId,
+      });
+
+      setStep(3);
     } catch (err) {
       alert("Error al guardar. Por favor, avisa en recepción.");
       console.error(err);
@@ -80,102 +90,216 @@ const RegistroPublico = ({ API_BASE }) => {
       </div>
 
       <div className="bg-white/80 backdrop-blur-2xl p-8 rounded-[2rem] shadow-2xl border border-white/50 w-full max-w-md animate-in zoom-in-95 duration-500">
-         <div className="flex justify-center mb-4">
-            <img src="/Dogs_&_Cats.jpeg" alt="Dogs & Cats Logo" className="w-24 h-24 rounded-2xl shadow-md border-2 border-white object-contain bg-white" />
-         </div>
-         <h2 className="text-2xl font-black text-center text-slate-800 mb-1">Sala de Espera</h2>
-         <p className="text-teal-600 text-center font-bold text-sm mb-6 uppercase tracking-wider">
-           {step === 1 ? "1. Datos del Titular" : step === 2 ? "2. Datos del Paciente" : "¡Registro Exitoso!"}
-         </p>
+        <div className="flex justify-center mb-4">
+          <img
+            src="/Dogs_&_Cats.jpeg"
+            alt="Dogs & Cats Logo"
+            className="w-24 h-24 rounded-2xl shadow-md border-2 border-white object-contain bg-white"
+          />
+        </div>
+        <h2 className="text-2xl font-black text-center text-slate-800 mb-1">
+          Sala de Espera
+        </h2>
+        <p className="text-teal-600 text-center font-bold text-sm mb-6 uppercase tracking-wider">
+          {step === 1
+            ? "1. Datos del Titular"
+            : step === 2
+              ? "2. Datos del Paciente"
+              : "¡Registro Exitoso!"}
+        </p>
 
-         {/* PASO 1: DATOS DEL DUEÑO */}
-         {step === 1 && (
-           <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="flex flex-col gap-4">
-              
-              {/* ✨ INTERRUPTOR ELEGANTE: NUEVO VS RECURRENTE */}
-              <div className="flex gap-2 p-1 bg-slate-200/50 rounded-xl mb-2">
-                <button 
-                  type="button"
-                  onClick={() => setIsReturningCustomer(false)}
-                  className={`w-1/2 py-2.5 rounded-lg font-black text-sm transition-all ${!isReturningCustomer ? 'bg-white shadow-md text-teal-600' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Nuevo Registro
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setIsReturningCustomer(true)}
-                  className={`w-1/2 py-2.5 rounded-lg font-black text-sm transition-all ${isReturningCustomer ? 'bg-white shadow-md text-teal-600' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Ya soy cliente
-                </button>
-              </div>
-
-              <input type="text" placeholder="Tu Nombre Completo" required value={owner.name} onChange={e=>setOwner({...owner, name: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
-              <input type="tel" placeholder="Teléfono celular (10 dígitos)" required value={owner.phone} onChange={e=>setOwner({...owner, phone: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner" />
-              
-              {/* ✨ MAGIA: Si NO es cliente recurrente, le pedimos el domicilio. Si ya lo es, lo ocultamos. */}
-              {!isReturningCustomer && (
-                <input type="text" placeholder="Domicilio (Opcional)" value={owner.address} onChange={e=>setOwner({...owner, address: e.target.value})} className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner animate-in fade-in slide-in-from-top-2" />
-              )}
-
-              <button type="submit" className="mt-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
-                Siguiente Paso 🐾
+        {/* PASO 1: DATOS DEL DUEÑO */}
+        {step === 1 && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setStep(2);
+            }}
+            className="flex flex-col gap-4"
+          >
+            {/* ✨ INTERRUPTOR ELEGANTE: NUEVO VS RECURRENTE */}
+            <div className="flex gap-2 p-1 bg-slate-200/50 rounded-xl mb-2">
+              <button
+                type="button"
+                onClick={() => setIsReturningCustomer(false)}
+                className={`w-1/2 py-2.5 rounded-lg font-black text-sm transition-all ${!isReturningCustomer ? "bg-white shadow-md text-teal-600" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Nuevo Registro
               </button>
-           </form>
-         )}
+              <button
+                type="button"
+                onClick={() => setIsReturningCustomer(true)}
+                className={`w-1/2 py-2.5 rounded-lg font-black text-sm transition-all ${isReturningCustomer ? "bg-white shadow-md text-teal-600" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Ya soy cliente
+              </button>
+            </div>
 
-         {/* PASO 2: DATOS DE LA MASCOTA */}
-         {step === 2 && (
-           <form onSubmit={(e) => { e.preventDefault(); submitForm(); }} className="flex flex-col gap-3">
-              <input type="text" placeholder="Nombre de la Mascota" required value={pet.name} onChange={e=>setPet({...pet, name: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner" />
-              <div className="grid grid-cols-2 gap-3">
-                <select value={pet.species} onChange={e=>setPet({...pet, species: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner">
-                  <option>Perro</option><option>Gato</option><option>Otro</option>
-                </select>
-                <select value={pet.sex} onChange={e=>setPet({...pet, sex: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner">
-                  <option>Macho (M)</option><option>Hembra (H)</option>
-                </select>
-              </div>
-              <input type="text" placeholder="Raza" required value={pet.breed} onChange={e=>setPet({...pet, breed: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner" />
-              <input type="text" placeholder="Color" required value={pet.color} onChange={e=>setPet({...pet, color: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner" />
-              <div>
-                <label className="text-xs font-bold text-slate-500 ml-2">Fecha de Nacimiento (Aprox)</label>
-                <input type="date" required value={pet.birth_date} onChange={e=>setPet({...pet, birth_date: e.target.value})} className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner" />
-              </div>
-              <div className="flex gap-3 mt-4">
-                <button type="button" onClick={() => setStep(1)} className="w-1/3 bg-slate-200 text-slate-700 font-black py-4 rounded-xl hover:bg-slate-300 transition-all active:scale-95">Atrás</button>
-                <button type="submit" disabled={loading} className="w-2/3 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95">
-                  {loading ? 'Guardando...' : 'Finalizar Registro 🚀'}
-                </button>
-              </div>
-           </form>
-         )}
+            <input
+              type="text"
+              placeholder="Tu Nombre Completo"
+              required
+              value={owner.name}
+              onChange={(e) => setOwner({ ...owner, name: e.target.value })}
+              className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner"
+            />
+            <input
+              type="tel"
+              placeholder="Teléfono celular (10 dígitos)"
+              required
+              value={owner.phone}
+              onChange={(e) => setOwner({ ...owner, phone: e.target.value })}
+              className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner"
+            />
 
-         {/* PASO 3: PANTALLA DE ÉXITO */}
-         {step === 3 && (
-           <div className="text-center py-6 animate-in fade-in duration-500">
-             <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border-4 border-white">
-               <span className="text-5xl">✅</span>
-             </div>
-             <h3 className="text-2xl font-black text-slate-800 mb-2">¡Todo Listo!</h3>
-             <p className="text-slate-600 font-medium mb-8">Tus datos y los de <strong>{pet.name}</strong> ya están seguros en nuestro sistema.</p>
-             <button onClick={() => { setStep(1); setOwner({name:"", phone:"", address:""}); setPet({name:"", species:"Perro", breed:"", sex:"Macho (M)", color:"", birth_date:""}); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-xl transition-all active:scale-95">
-               Registrar otra mascota
-             </button>
-           </div>
-         )}
+            {/* ✨ MAGIA: Si NO es cliente recurrente, le pedimos el domicilio. Si ya lo es, lo ocultamos. */}
+            {!isReturningCustomer && (
+              <input
+                type="text"
+                placeholder="Domicilio (Opcional)"
+                value={owner.address}
+                onChange={(e) =>
+                  setOwner({ ...owner, address: e.target.value })
+                }
+                className="w-full p-4 rounded-xl bg-white/60 border border-slate-200 outline-none focus:border-teal-500 font-bold shadow-inner animate-in fade-in slide-in-from-top-2"
+              />
+            )}
+
+            <button
+              type="submit"
+              className="mt-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95"
+            >
+              Siguiente Paso 🐾
+            </button>
+          </form>
+        )}
+
+        {/* PASO 2: DATOS DE LA MASCOTA */}
+        {step === 2 && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitForm();
+            }}
+            className="flex flex-col gap-3"
+          >
+            <input
+              type="text"
+              placeholder="Nombre de la Mascota"
+              required
+              value={pet.name}
+              onChange={(e) => setPet({ ...pet, name: e.target.value })}
+              className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={pet.species}
+                onChange={(e) => setPet({ ...pet, species: e.target.value })}
+                className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner"
+              >
+                <option>Perro</option>
+                <option>Gato</option>
+                <option>Otro</option>
+              </select>
+              <select
+                value={pet.sex}
+                onChange={(e) => setPet({ ...pet, sex: e.target.value })}
+                className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner"
+              >
+                <option>Macho (M)</option>
+                <option>Hembra (H)</option>
+              </select>
+            </div>
+            <input
+              type="text"
+              placeholder="Raza"
+              required
+              value={pet.breed}
+              onChange={(e) => setPet({ ...pet, breed: e.target.value })}
+              className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner"
+            />
+            <input
+              type="text"
+              placeholder="Color"
+              required
+              value={pet.color}
+              onChange={(e) => setPet({ ...pet, color: e.target.value })}
+              className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold shadow-inner"
+            />
+            <div>
+              <label className="text-xs font-bold text-slate-500 ml-2">
+                Fecha de Nacimiento (Aprox)
+              </label>
+              <input
+                type="date"
+                required
+                value={pet.birth_date}
+                onChange={(e) => setPet({ ...pet, birth_date: e.target.value })}
+                className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner"
+              />
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="w-1/3 bg-slate-200 text-slate-700 font-black py-4 rounded-xl hover:bg-slate-300 transition-all active:scale-95"
+              >
+                Atrás
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-2/3 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg hover:from-teal-400 hover:to-teal-500 transition-all active:scale-95"
+              >
+                {loading ? "Guardando..." : "Finalizar Registro 🚀"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* PASO 3: PANTALLA DE ÉXITO */}
+        {step === 3 && (
+          <div className="text-center py-6 animate-in fade-in duration-500">
+            <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border-4 border-white">
+              <span className="text-5xl">✅</span>
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 mb-2">
+              ¡Todo Listo!
+            </h3>
+            <p className="text-slate-600 font-medium mb-8">
+              Tus datos y los de <strong>{pet.name}</strong> ya están seguros en
+              nuestro sistema.
+            </p>
+            <button
+              onClick={() => {
+                setStep(1);
+                setOwner({ name: "", phone: "", address: "" });
+                setPet({
+                  name: "",
+                  species: "Perro",
+                  breed: "",
+                  sex: "Macho (M)",
+                  color: "",
+                  birth_date: "",
+                });
+              }}
+              className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-xl transition-all active:scale-95"
+            >
+              Registrar otra mascota
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 function App() {
-
   const API_BASE = "https://dogs-and-cats-api.onrender.com";
 
   // --- INTERCEPTOR DE RUTA PUBLICA ---
-  if(window.location.pathname === '/registro'){
-    return <RegistroPublico API_BASE={API_BASE}/>;
+  if (window.location.pathname === "/registro") {
+    return <RegistroPublico API_BASE={API_BASE} />;
   }
 
   // --- ESTADOS DE SEGURIDAD ---
@@ -187,7 +311,7 @@ function App() {
   // --- ESTADOS GENERALES ---
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [newOwner, setNewOwner] = useState({
     name: "",
     address: "",
@@ -260,6 +384,8 @@ function App() {
   // --- ESTADOS PARA VENTA POR DOSIS/FRACCIÓN ---
   const [isFractionalSale, setIsFractionalSale] = useState(false);
   const [fractionCapacity, setFractionCapacity] = useState("");
+  const [fractionAmount, setFractionAmount] = useState("");
+  const [targetMoney, setTargetMoney] = useState("");
 
   // --- ESTADOS PARA LA LLAMADA DE LOS HORARIOS ---
   const [bookedTimes, setBookedTimes] = useState([]);
@@ -402,7 +528,10 @@ function App() {
     if (newAppt.date === todayStr) {
       const [slotHour, slotMinute] = time.split(":").map(Number);
       // Si la hora del bloque es menor a la hora actual, o es la misma hora pero con menos minutos = ya pasó
-      if (slotHour < currentHour || (slotHour === currentHour && slotMinute <= currentMinute)) {
+      if (
+        slotHour < currentHour ||
+        (slotHour === currentHour && slotMinute <= currentMinute)
+      ) {
         isPast = true;
       }
     }
@@ -428,9 +557,10 @@ function App() {
       // 2. MAGIA PARA RECONOCER A MARU PEÑA
       let displayUser = cleanUsername;
       if (cleanUsername === "maru peña" || cleanUsername === "maru pena") {
-         displayUser = "Maru Peña"; // Se verá siempre elegante en el menú
+        displayUser = "Maru Peña"; // Se verá siempre elegante en el menú
       } else {
-         displayUser = cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1);
+        displayUser =
+          cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1);
       }
 
       setCurrentUser(displayUser);
@@ -459,7 +589,7 @@ function App() {
     try {
       // Limpiamos los espacios también al registrar
       const cleanUsername = authData.username.toLowerCase().trim();
-      
+
       await axios.post(`${API_BASE}/register/`, {
         username: cleanUsername,
         password: authData.password.trim(),
@@ -569,10 +699,20 @@ function App() {
   const handleAddOrUpdateProduct = async (e) => {
     e.preventDefault();
     try {
-      let qty = newProduct.category === "Servicio" ? 999999 : parseFloat(newProduct.quantity || 0);
-      let minStock = newProduct.category === "Servicio" ? 0 : parseFloat(newProduct.min_stock);
-      let expDate = newProduct.category === "Servicio" ? null : newProduct.expiration_date || null;
-      let unit = newProduct.category === "Servicio" ? "servicio" : newProduct.unit;
+      let qty =
+        newProduct.category === "Servicio"
+          ? 999999
+          : parseFloat(newProduct.quantity || 0);
+      let minStock =
+        newProduct.category === "Servicio"
+          ? 0
+          : parseFloat(newProduct.min_stock);
+      let expDate =
+        newProduct.category === "Servicio"
+          ? null
+          : newProduct.expiration_date || null;
+      let unit =
+        newProduct.category === "Servicio" ? "servicio" : newProduct.unit;
 
       if (editingGroupItems) {
         for (let item of editingGroupItems) {
@@ -584,24 +724,28 @@ function App() {
             min_stock: minStock,
           });
         }
-        if(qty > 0){
-          await axios.post(`${API_BASE}/products/`,{
+        if (qty > 0) {
+          await axios.post(`${API_BASE}/products/`, {
             category: newProduct.category,
-             name: newProduct.name, // Usa el mismo nombre exacto para que se agrupe
-             quantity: qty,
-             unit: unit,
-             price: parseFloat(newProduct.price),
-             min_stock: minStock,
-             expiration_date: expDate,
+            name: newProduct.name, // Usa el mismo nombre exacto para que se agrupe
+            quantity: qty,
+            unit: unit,
+            price: parseFloat(newProduct.price),
+            min_stock: minStock,
+            expiration_date: expDate,
           });
         }
         Toast.fire({ icon: "success", title: "Artículo actualizado" });
       } else {
         const baseName = newProduct.name.trim();
         const exists = products.some(
-          (p) => p.name.split("_@@_")[0].trim().toLowerCase() === baseName.toLowerCase(),
+          (p) =>
+            p.name.split("_@@_")[0].trim().toLowerCase() ===
+            baseName.toLowerCase(),
         );
-        const finalName = exists ? `${baseName}_@@_${Math.random().toString(36).substr(2, 5)}`: baseName;
+        const finalName = exists
+          ? `${baseName}_@@_${Math.random().toString(36).substr(2, 5)}`
+          : baseName;
 
         await axios.post(`${API_BASE}/products/`, {
           category: newProduct.category,
@@ -667,13 +811,15 @@ function App() {
         triggerSync();
         Toast.fire({ icon: "success", title: "Artículo eliminado" });
       } catch (err) {
-        const mensajeBackend = err.response?.data?.detail || "No se pudo eliminar el artículo debido a un error de conexión.";
-        
+        const mensajeBackend =
+          err.response?.data?.detail ||
+          "No se pudo eliminar el artículo debido a un error de conexión.";
+
         Swal.fire({
           icon: "error",
           title: "Acción Denegada",
           text: mensajeBackend,
-          confirmButtonColor: "#0d9488"
+          confirmButtonColor: "#0d9488",
         });
       }
     }
@@ -685,40 +831,56 @@ function App() {
       (p) => p.name.toLowerCase() === newSale.product_key,
     );
     if (!productGroup) return;
-    const qty = parseFloat(newSale.quantity);
+
+    let qtyToDeduct = 0;
+    let displayQuantity = 0;
+    let desc = productGroup.name;
+    let displayUnit = productGroup.unit;
+
+    // ✨ MAGIA: Cálculo de fracción a granel
+    if (isFractionalSale && fractionCapacity && fractionAmount) {
+      displayQuantity = parseFloat(fractionAmount);
+      qtyToDeduct = displayQuantity / parseFloat(fractionCapacity); // Ej: 500g / 1000 = 0.5 kg a descontar de BD
+      if (["kg", "L"].includes(productGroup.unit)) {
+        displayUnit = productGroup.unit === "kg" ? "g" : "ml";
+      } else {
+        displayUnit = "dosis/pzas";
+      }
+      desc = `${productGroup.name} (Venta a Granel)`;
+    } else {
+      qtyToDeduct = parseFloat(newSale.quantity);
+      displayQuantity = qtyToDeduct;
+    }
 
     const currentQtyInCart = cart
       .filter((item) => item.product_key === productGroup.name.toLowerCase())
-      .reduce((sum, item) => sum + item.quantity, 0);
+      .reduce((sum, item) => sum + item.quantityToDeduct, 0); // Revisamos la cantidad real en kg
+
     if (
       productGroup.category !== "Servicio" &&
-      currentQtyInCart + qty > productGroup.totalQuantity
+      currentQtyInCart + qtyToDeduct > productGroup.totalQuantity
     ) {
       Swal.fire(
         "Stock Insuficiente",
-        `Solo hay ${productGroup.totalQuantity} disponibles.`,
+        `Solo hay ${productGroup.totalQuantity} ${productGroup.unit} disponibles en el almacén.`,
         "warning",
       );
       return;
     }
 
-    let finalPrice = productGroup.price;
-    let desc = productGroup.name;
-    if (isFractionalSale && fractionCapacity) {
-      finalPrice = productGroup.price / parseFloat(fractionCapacity);
-      desc = `${productGroup.name} (Dosis fraccionada)`;
-    }
-
     const itemsToAdd = [];
+    let itemTotal = productGroup.price * qtyToDeduct; // Ej: $115 * 0.5kg = $57.50
+
     itemsToAdd.push({
       cart_id: Math.random().toString(36).substr(2, 9),
       product_key: productGroup.name.toLowerCase(),
       name: desc,
       category: productGroup.category,
-      unit: productGroup.unit,
-      price: finalPrice,
-      quantity: qty,
-      total: finalPrice * qty,
+      unit: displayUnit, // Se verá como "500 g" en el ticket
+      price: productGroup.price,
+      quantity: displayQuantity, // Los 500 visuales
+      quantityToDeduct: qtyToDeduct, // El 0.5 interno para la BD
+      total: itemTotal,
       payment_method: newSale.payment_method,
     });
 
@@ -739,7 +901,6 @@ function App() {
           extraProd = res.data;
           fetchProducts();
         } catch (err) {
-          Swal.fire("Error", "Fallo conexión BD para el extra", "error");
           return;
         }
       }
@@ -751,6 +912,7 @@ function App() {
         unit: "N/A",
         price: amt,
         quantity: 1,
+        quantityToDeduct: 1,
         total: amt,
         payment_method: newSale.payment_method,
       });
@@ -760,14 +922,11 @@ function App() {
     setNewSale({ ...newSale, product_key: "", quantity: "" });
     setIsFractionalSale(false);
     setFractionCapacity("");
+    setFractionAmount("");
+    setTargetMoney("");
     setExtraDetails({ description: "", amount: "" });
     setIsExtraCharge(false);
-    Toast.fire({
-      icon: "success",
-      title: isExtraCharge
-        ? "Producto y Extra agregados"
-        : "Agregado al ticket",
-    });
+    Toast.fire({ icon: "success", title: "Agregado al ticket" });
   };
 
   const removeFromCart = (cart_id) => {
@@ -778,7 +937,7 @@ function App() {
     if (cart.length === 0) return;
     try {
       for (const item of cart) {
-        let qtyNeeded = item.quantity;
+        let qtyNeeded = item.quantityToDeduct;
         let lots = products.filter(
           (p) =>
             p.name.split("_@@_")[0].trim().toLowerCase() === item.product_key &&
@@ -797,7 +956,7 @@ function App() {
               ? qtyNeeded
               : Math.min(qtyNeeded, lot.quantity);
           qtyNeeded -= take;
-          let priceToSend = (item.total / item.quantity) * take;
+          let priceToSend = (item.total / item.quantityToDeduct) * take;
 
           await axios.post(`${API_BASE}/sales/`, {
             product_id: lot.id,
@@ -1259,17 +1418,21 @@ function App() {
 
   const printSurgeryAuth = (pet, owner) => {
     const printWindow = window.open("", "_blank");
-    const today = new Date().toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
-    
+    const today = new Date().toLocaleDateString("es-MX", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
     // Usamos nuestra función transformadora para el folio
-    const folio = `DC-${String(pet.id).padStart(4, '0')}`;
+    const folio = `DC-${String(pet.id).padStart(4, "0")}`;
 
     // Calculamos la edad aproximada si hay fecha de nacimiento
     let edad = "N/E";
     if (pet.birth_date) {
       const birthYear = new Date(pet.birth_date).getFullYear();
       const currentYear = new Date().getFullYear();
-      edad = (currentYear - birthYear) + " años";
+      edad = currentYear - birthYear + " años";
     }
 
     const htmlTemplate = `
@@ -1334,11 +1497,11 @@ function App() {
               </div>
               <div class="form-row">
                   <div class="form-label">Domicilio</div>
-                  <div class="form-line">${owner.address || '_________________________________________'}</div>
+                  <div class="form-line">${owner.address || "_________________________________________"}</div>
               </div>
               <div class="form-row">
                   <div class="form-label">Teléfono</div>
-                  <div class="form-line">${owner.phone || '_________________________________________'}</div>
+                  <div class="form-line">${owner.phone || "_________________________________________"}</div>
               </div>
               
               <div class="form-col-2" style="margin-top: 10px;">
@@ -1355,18 +1518,18 @@ function App() {
               <div class="form-col-2">
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Raza</div>
-                      <div class="form-line">${pet.breed || '________________'}</div>
+                      <div class="form-line">${pet.breed || "________________"}</div>
                   </div>
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Color</div>
-                      <div class="form-line">${pet.color || '________________'}</div>
+                      <div class="form-line">${pet.color || "________________"}</div>
                   </div>
               </div>
 
               <div class="form-col-2">
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Sexo</div>
-                      <div class="form-line">${pet.sex || '________________'}</div>
+                      <div class="form-line">${pet.sex || "________________"}</div>
                   </div>
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Edad (aprox)</div>
@@ -1521,23 +1684,22 @@ function App() {
     .map((p) => ({ ...p, cleanName: p.name.split("_@@_")[0].trim() }));
 
   let currentItemPrice = 0;
+  let currentItemTotalCalc = 0;
   const selectedProductGroup = groupedInventory.find(
     (p) => p.name.toLowerCase() === newSale.product_key,
   );
   if (selectedProductGroup) {
     currentItemPrice = selectedProductGroup.price;
-    if (isFractionalSale && fractionCapacity) {
-      currentItemPrice =
-        selectedProductGroup.price / parseFloat(fractionCapacity);
+    if (isFractionalSale && fractionCapacity && fractionAmount) {
+      currentItemTotalCalc =
+        currentItemPrice *
+        (parseFloat(fractionAmount) / parseFloat(fractionCapacity || 1));
+    } else if (!isFractionalSale && newSale.quantity) {
+      currentItemTotalCalc = currentItemPrice * parseFloat(newSale.quantity);
     }
   }
-  const currentItemTotal =
-    selectedProductGroup && newSale.quantity
-      ? (currentItemPrice * parseFloat(newSale.quantity)).toFixed(2)
-      : "0.00";
-
+  const currentItemTotal = currentItemTotalCalc.toFixed(2);
   const cartGrandTotal = cart.reduce((sum, item) => sum + item.total, 0);
-
   // ==========================================
   // --- PANTALLA DE LOGIN (MODERNA) ---
   // ==========================================
@@ -2232,9 +2394,9 @@ function App() {
               {editingGroupItems && (
                 <p className="text-amber-600 font-bold mb-4 text-sm bg-amber-50 p-4 rounded-xl border border-amber-100">
                   Nota: Al editar aquí actualizarás el precio y categoría de{" "}
-                  <b>todos los lotes</b> de este producto. Para registrar
-                  stock nuevo con otra caducidad, dale a Cancelar y guarda un
-                  "Nuevo Artículo" escribiendo el nombre exactamente igual.
+                  <b>todos los lotes</b> de este producto. Para registrar stock
+                  nuevo con otra caducidad, dale a Cancelar y guarda un "Nuevo
+                  Artículo" escribiendo el nombre exactamente igual.
                 </p>
               )}
 
@@ -2260,9 +2422,7 @@ function App() {
                     <option value="Alimento">Alimento</option>
                     <option value="Accesorios">Accesorios</option>
                     <option value="Vacuna">Vacuna</option>
-                    <option value="Servicio">
-                      Servicio (Baño, Corte...)
-                    </option>
+                    <option value="Servicio">Servicio (Baño, Corte...)</option>
                   </select>
                 </div>
 
@@ -2310,7 +2470,10 @@ function App() {
                         step="0.01"
                         value={newProduct.quantity}
                         onChange={(e) =>
-                          setNewProduct({ ...newProduct, quantity: e.target.value })
+                          setNewProduct({
+                            ...newProduct,
+                            quantity: e.target.value,
+                          })
                         }
                         required={!editingGroupItems}
                         placeholder={editingGroupItems ? "Opcional" : "Ej. 10"}
@@ -2325,7 +2488,10 @@ function App() {
                         type="date"
                         value={newProduct.expiration_date}
                         onChange={(e) =>
-                          setNewProduct({ ...newProduct, expiration_date: e.target.value })
+                          setNewProduct({
+                            ...newProduct,
+                            expiration_date: e.target.value,
+                          })
                         }
                         className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-500"
                       />
@@ -2568,67 +2734,127 @@ function App() {
                       </select>
                     </div>
 
-                    {selectedProductGroup &&
-                      ["ml", "L", "g", "kg"].includes(
-                        selectedProductGroup.unit,
-                      ) && (
-                        <div className="bg-teal-50/50 p-4 rounded-2xl border border-teal-100 flex flex-col gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer font-bold text-teal-800 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={isFractionalSale}
-                              onChange={(e) =>
-                                setIsFractionalSale(e.target.checked)
+                    {selectedProductGroup && (
+                      <div className="bg-teal-50/50 p-5 rounded-3xl border border-teal-200 flex flex-col gap-4 mt-2">
+                        <label className="flex items-center gap-3 cursor-pointer font-black text-teal-900 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={isFractionalSale}
+                            onChange={(e) => {
+                              setIsFractionalSale(e.target.checked);
+                              setFractionAmount("");
+                              setTargetMoney("");
+                              setNewSale({ ...newSale, quantity: "" });
+                              if (
+                                ["kg", "L"].includes(selectedProductGroup.unit)
+                              ) {
+                                setFractionCapacity("1000");
+                              } else {
+                                setFractionCapacity("");
                               }
-                              className="w-5 h-5 rounded text-teal-600"
-                            />
-                            ¿Cobrar por dosis / fracción del envase?
-                          </label>
-                          {isFractionalSale && (
-                            <div className="animate-in fade-in zoom-in-95 duration-200 mt-2">
-                              <label className="text-xs font-black text-teal-500 uppercase tracking-widest mb-2 ml-1 block">
-                                Capacidad total del frasco (
-                                {selectedProductGroup.unit})
+                            }}
+                            className="w-5 h-5 rounded text-teal-600 accent-teal-600"
+                          />
+                          ¿Vender a Granel / Fracción? (Gramos, ml, sueltas)
+                        </label>
+
+                        {isFractionalSale && (
+                          <div className="animate-in fade-in zoom-in-95 duration-200 bg-white p-5 rounded-2xl shadow-sm border border-teal-100 flex flex-col gap-4">
+                            {/* CALCULADORA INVERSA */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                              <div>
+                                <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 ml-1 block">
+                                  ¿El cliente pide por dinero? ($)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={targetMoney}
+                                  onChange={(e) => {
+                                    const money = e.target.value;
+                                    setTargetMoney(money);
+                                    if (money && fractionCapacity) {
+                                      // Cálculo inverso: (Dinero / Precio Unitario) * Capacidad
+                                      const calculatedGrams =
+                                        (parseFloat(money) /
+                                          selectedProductGroup.price) *
+                                        parseFloat(fractionCapacity);
+                                      setFractionAmount(
+                                        calculatedGrams.toFixed(2),
+                                      );
+                                    }
+                                  }}
+                                  className="w-full p-3 bg-white border border-emerald-200 rounded-lg font-bold text-emerald-900 outline-none"
+                                  placeholder="Ej. 100"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-black text-teal-700 uppercase tracking-widest mb-1 ml-1 block">
+                                  Capacidad (Ej. 1kg = 1000g)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={fractionCapacity}
+                                  onChange={(e) =>
+                                    setFractionCapacity(e.target.value)
+                                  }
+                                  className="w-full p-3 bg-white border border-teal-200 rounded-lg font-bold text-teal-900 outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            {/* CAMPO DE PESO REAL (LA BÁSCULA) */}
+                            <div>
+                              <label className="text-xs font-black text-teal-600 uppercase tracking-widest mb-2 ml-1 block">
+                                ⚖️ Peso Real en Báscula (
+                                {["kg", "L"].includes(selectedProductGroup.unit)
+                                  ? "Gramos/ml"
+                                  : "Unidades"}
+                                )
                               </label>
                               <input
                                 type="number"
                                 step="0.01"
-                                value={fractionCapacity}
+                                value={fractionAmount}
                                 onChange={(e) =>
-                                  setFractionCapacity(e.target.value)
+                                  setFractionAmount(e.target.value)
                                 }
-                                placeholder="Ej. 250"
-                                required={isFractionalSale}
-                                className="w-full p-4 bg-white border border-teal-200 rounded-2xl font-black outline-none focus:ring-2 focus:ring-teal-600 text-teal-900"
+                                className="w-full p-4 bg-white border-2 border-teal-500 rounded-xl font-black text-teal-900 text-xl outline-none focus:ring-4 focus:ring-teal-500/20 text-center"
+                                placeholder="Ej. 500"
                               />
                             </div>
-                          )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-4">
+                      {/* Ocultamos la cantidad normal si están vendiendo a granel para no confundir */}
+                      {!isFractionalSale && (
+                        <div className="w-1/2">
+                          <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
+                            Cant. ({selectedProductGroup?.unit || ""})
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={newSale.quantity}
+                            onChange={(e) =>
+                              setNewSale({
+                                ...newSale,
+                                quantity: e.target.value,
+                              })
+                            }
+                            required
+                            placeholder="Ej. 1"
+                            className="w-full p-4 bg-slate-50 border-none rounded-2xl font-black text-xl outline-none focus:ring-2 focus:ring-teal-600 transition-all text-center"
+                          />
                         </div>
                       )}
 
-                    <div className="flex gap-4">
-                      <div className="w-1/2">
+                      <div className={isFractionalSale ? "w-full" : "w-1/2"}>
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                          {isFractionalSale
-                            ? `Cant. a usar (${selectedProductGroup?.unit})`
-                            : "Cant."}
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          value={newSale.quantity}
-                          onChange={(e) =>
-                            setNewSale({ ...newSale, quantity: e.target.value })
-                          }
-                          required
-                          placeholder="Ej. 1"
-                          className="w-full p-4 bg-slate-50 border-none rounded-2xl font-black text-xl outline-none focus:ring-2 focus:ring-teal-600 transition-all text-center"
-                        />
-                      </div>
-                      <div className="w-1/2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                          Pago
+                          Método de Pago
                         </label>
                         <select
                           value={newSale.payment_method}
@@ -2723,7 +2949,9 @@ function App() {
                       type="submit"
                       disabled={
                         !newSale.product_key ||
-                        !newSale.quantity ||
+                        (isFractionalSale 
+                          ? (!fractionAmount || !fractionCapacity) // Si es a granel, exige el peso y la capacidad
+                          : !newSale.quantity) ||                  // Si es normal, exige la cantidad entera
                         (isExtraCharge &&
                           (!extraDetails.description || !extraDetails.amount))
                       }
