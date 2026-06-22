@@ -35,7 +35,67 @@ import {
   AlertTriangle,
   Clipboard,
   Clock,
+  Bell
 } from "lucide-react";
+
+// ✨ COMPONENTE: CAMPO DE FECHA INTELIGENTE (HÍBRIDO PARA TABLETS/MÓVILES)
+const SmartDateInput = ({ value, onChange, className, required }) => {
+  const [displayValue, setDisplayValue] = useState("");
+
+  useEffect(() => {
+    if (value && value.includes("-")) {
+      const [y, m, d] = value.split("-");
+      setDisplayValue(`${d}/${m}/${y}`);
+    } else {
+      setDisplayValue("");
+    }
+  }, [value]);
+
+  const handleTextChange = (e) => {
+    let val = e.target.value.replace(/\D/g, ""); // Borramos letras, solo números
+    if (val.length > 8) val = val.slice(0, 8);
+    
+    // Auto-formato con diagonales
+    let formatted = val;
+    if (val.length > 4) formatted = `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4)}`;
+    else if (val.length > 2) formatted = `${val.slice(0, 2)}/${val.slice(2)}`;
+    setDisplayValue(formatted);
+
+    // Si ya completó los 8 dígitos, se lo pasamos a la base de datos
+    if (val.length === 8) {
+      onChange(`${val.slice(4, 8)}-${val.slice(2, 4)}-${val.slice(0, 2)}`);
+    } else {
+      onChange(""); 
+    }
+  };
+
+  return (
+    <div className="relative w-full flex items-center group">
+      <input
+        type="tel" // Abre el teclado numérico en iPad/Celular
+        required={required}
+        value={displayValue}
+        onChange={handleTextChange}
+        placeholder="DD/MM/AAAA"
+        className={`${className} pr-12`}
+      />
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl cursor-pointer hover:bg-slate-200/50 transition-colors">
+        <Calendar className="text-teal-600 absolute pointer-events-none" size={20} />
+        <input
+          type="date"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => {
+            try {
+              e.target.showPicker();
+            } catch (err) {}
+          }}
+          className="opacity-0 absolute inset-0 cursor-pointer w-[200%] h-[200%] -top-1/2 -left-1/2"
+        />
+      </div>
+    </div>
+  );
+};
 
 // ==========================================
 // --- SALA DE ESPERA INTELIGENTE (CLIENTES) ---
@@ -230,11 +290,10 @@ const RegistroPublico = ({ API_BASE }) => {
               <label className="text-xs font-bold text-slate-500 ml-2">
                 Fecha de Nacimiento (Aprox)
               </label>
-              <input
-                type="date"
+              <SmartDateInput
                 required
                 value={pet.birth_date}
-                onChange={(e) => setPet({ ...pet, birth_date: e.target.value })}
+                onChange={(val) => setPet({ ...pet, birth_date: val })}
                 className="w-full p-3 rounded-xl bg-white/60 border border-slate-200 font-bold text-slate-600 shadow-inner"
               />
             </div>
@@ -296,7 +355,8 @@ const RegistroPublico = ({ API_BASE }) => {
 
 function App() {
   const API_BASE = "https://dogs-and-cats-api.onrender.com";
-
+  
+  //const API_BASE = "http://127.0.0.1:8000";
   // --- INTERCEPTOR DE RUTA PUBLICA ---
   if (window.location.pathname === "/registro") {
     return <RegistroPublico API_BASE={API_BASE} />;
@@ -380,7 +440,7 @@ function App() {
     pet: null,
   });
   const [showTodayAppts, setShowTodayAppts] = useState(false);
-
+  const [showUpcomingAppts, setShowUpcomingAppts] = useState(false);
   // --- ESTADOS PARA VENTA POR DOSIS/FRACCIÓN ---
   const [isFractionalSale, setIsFractionalSale] = useState(false);
   const [fractionCapacity, setFractionCapacity] = useState("");
@@ -692,7 +752,10 @@ function App() {
       group.subItems.push(p);
     }
   });
-  const groupedInventory = Array.from(inventoryGroupedMap.values()).sort(
+  const groupedInventory = Array.from(inventoryGroupedMap.values()).map(group => ({
+    ...group,
+    totalQuantity: group.category === "Servicio" ? 999999 : parseFloat(Number(group.totalQuantity).toFixed(2))
+  })).sort(
     (a, b) => a.name.localeCompare(b.name),
   );
 
@@ -964,6 +1027,13 @@ function App() {
             payment_method: item.payment_method,
             total_price: priceToSend,
           });
+          if (lot.category !== "Servicio") {
+            const stockRestante = lot.quantity - take;
+            await axios.put(`${API_BASE}/products/${lot.id}`, {
+              ...lot,
+              quantity: stockRestante, // Mandamos el nuevo stock actualizado
+            });
+          }
         }
       }
       Swal.fire({
@@ -1312,7 +1382,6 @@ function App() {
     `;
     printWindow.document.write(htmlTemplate);
     printWindow.document.close();
-    setPrescriptionModal({ isOpen: false, pet: null, appt: null, text: "" });
   };
 
   const printExpediente = () => {
@@ -1683,23 +1752,57 @@ function App() {
     })
     .map((p) => ({ ...p, cleanName: p.name.split("_@@_")[0].trim() }));
 
-  let currentItemPrice = 0;
-  let currentItemTotalCalc = 0;
+  // --- CÁLCULOS DE PRECIO Y TOTAL ---
   const selectedProductGroup = groupedInventory.find(
     (p) => p.name.toLowerCase() === newSale.product_key,
   );
+
+  let currentItemTotal = "0.00";
   if (selectedProductGroup) {
-    currentItemPrice = selectedProductGroup.price;
+    const unitPrice = selectedProductGroup.price;
+    let totalCalc = 0;
     if (isFractionalSale && fractionCapacity && fractionAmount) {
-      currentItemTotalCalc =
-        currentItemPrice *
-        (parseFloat(fractionAmount) / parseFloat(fractionCapacity || 1));
+      totalCalc = unitPrice * (parseFloat(fractionAmount) / parseFloat(fractionCapacity || 1));
     } else if (!isFractionalSale && newSale.quantity) {
-      currentItemTotalCalc = currentItemPrice * parseFloat(newSale.quantity);
+      totalCalc = unitPrice * parseFloat(newSale.quantity);
     }
+    currentItemTotal = totalCalc.toFixed(2);
   }
-  const currentItemTotal = currentItemTotalCalc.toFixed(2);
+
   const cartGrandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+
+  // ✨ MAGIA: Calculamos qué día será exactamente en 3 días
+  const futureObj = new Date();
+  futureObj.setDate(futureObj.getDate() + 3);
+  const formattedFutureDate = `${futureObj.getFullYear()}-${String(futureObj.getMonth() + 1).padStart(2, "0")}-${String(futureObj.getDate()).padStart(2, "0")}`;
+
+  // ✨ MAGIA: Filtramos a los pacientes que vienen en 3 días
+  const upcomingAppointmentsList = owners
+    ?.flatMap((owner) =>
+      (owner.pets || []).flatMap((pet) =>
+        (pet.appointments || [])
+          .filter((a) => a.date === formattedFutureDate && a.status === "Pendiente")
+          .map((a) => ({
+            ...a,
+            petName: pet.name,
+            ownerName: owner.name,
+            ownerPhone: owner.phone,
+          }))
+      )
+    ).sort((a, b) => a.time.localeCompare(b.time)) || [];
+
+  // ✨ FUNCION: Disparar el mensaje de WhatsApp
+  const handleSendWhatsAppReminder = (phone, ownerName, petName, reason, date, time) => {
+    if (!phone) {
+      Swal.fire("Sin teléfono", "Este cliente no tiene un teléfono registrado.", "warning");
+      return;
+    }
+    let cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length === 10) cleanPhone = `52${cleanPhone}`; // Asume lada 52 de México
+    const msg = `¡Hola, ${ownerName}! 🐾 Te escribimos de Dogs & Cats. Queremos recordarte que ${petName} tiene programada su visita para "${reason}" el próximo ${date} a las ${time}. ¡Los esperamos!`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+  
   // ==========================================
   // --- PANTALLA DE LOGIN (MODERNA) ---
   // ==========================================
@@ -1843,11 +1946,27 @@ function App() {
               <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">
                 DOGS <span className="text-rose-500">AND</span> CATS
               </h1>
-              <div className="flex items-center gap-2">
-                <PawPrint size={16} className="text-teal-500 animate-bounce" />
-                <p className="text-teal-700 text-sm font-bold uppercase tracking-widest">
-                  Veterinaria • {currentUser}
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <PawPrint size={16} className="text-teal-500 animate-bounce" />
+                  <p className="text-teal-700 text-sm font-bold uppercase tracking-widest">
+                    Veterinaria • {currentUser}
+                  </p>
+                </div>
+                
+                {/* ✨ LA CAMPANITA DE NOTIFICACIONES ✨ */}
+                <button 
+                  onClick={() => setShowUpcomingAppts(true)}
+                  className="relative p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-all"
+                  title="Recordatorios de Citas"
+                >
+                  <Bell size={20} />
+                  {upcomingAppointmentsList.length > 0 && (
+                    <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-black w-4 h-4 flex items-center justify-center rounded-full animate-pulse">
+                      {upcomingAppointmentsList.length}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -2187,20 +2306,19 @@ function App() {
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                       Fecha de Nacimiento
                     </label>
-                    <input
-                      type="date"
+                    <SmartDateInput
                       value={
                         editingPet ? editingPet.birth_date : newPet.birth_date
                       }
-                      onChange={(e) =>
+                      onChange={(val) =>
                         editingPet
                           ? setEditingPet({
                               ...editingPet,
-                              birth_date: e.target.value,
+                              birth_date: val,
                             })
-                          : setNewPet({ ...newPet, birth_date: e.target.value })
+                          : setNewPet({ ...newPet, birth_date: val })
                       }
-                      className="w-full p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-teal-600 transition-all font-medium text-slate-500"
+                      className="w-full p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-teal-600 transition-all font-medium text-slate-700"
                     />
                   </div>
                   <button
@@ -2241,14 +2359,13 @@ function App() {
                       <label className="block text-xs font-black text-rose-400/70 uppercase tracking-widest mb-2 ml-1">
                         Fecha
                       </label>
-                      <input
-                        type="date"
+                      <SmartDateInput
                         value={newAppt.date}
-                        onChange={(e) =>
-                          setNewAppt({ ...newAppt, date: e.target.value })
+                        onChange={(val) =>
+                          setNewAppt({ ...newAppt, date: val })
                         }
                         required
-                        className="w-full p-4 bg-white border-none rounded-2xl outline-none focus:ring-2 focus:ring-rose-400 transition-all font-medium text-slate-600"
+                        className="w-full p-4 bg-white border-none rounded-2xl outline-none focus:ring-2 focus:ring-rose-400 transition-all font-medium text-slate-700"
                       />
                     </div>
                     <div className="w-full sm:w-1/2">
@@ -2484,16 +2601,15 @@ function App() {
                       <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                         Caducidad
                       </label>
-                      <input
-                        type="date"
+                      <SmartDateInput
                         value={newProduct.expiration_date}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setNewProduct({
                             ...newProduct,
-                            expiration_date: e.target.value,
+                            expiration_date: val,
                           })
                         }
-                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-500"
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-700"
                       />
                     </div>
                   </>
@@ -2949,9 +3065,9 @@ function App() {
                       type="submit"
                       disabled={
                         !newSale.product_key ||
-                        (isFractionalSale 
-                          ? (!fractionAmount || !fractionCapacity) // Si es a granel, exige el peso y la capacidad
-                          : !newSale.quantity) ||                  // Si es normal, exige la cantidad entera
+                        (isFractionalSale
+                          ? !fractionAmount || !fractionCapacity // Si es a granel, exige el peso y la capacidad
+                          : !newSale.quantity) || // Si es normal, exige la cantidad entera
                         (isExtraCharge &&
                           (!extraDetails.description || !extraDetails.amount))
                       }
@@ -3629,6 +3745,54 @@ function App() {
                   <p className="text-slate-500 font-bold text-lg">
                     No hay citas pendientes para hoy.
                   </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpcomingAppts && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-50 p-4" onClick={() => setShowUpcomingAppts(false)}>
+          <div className="bg-white rounded-[3rem] w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-amber-500 p-8 text-white flex justify-between items-center z-10 shadow-md">
+              <div>
+                <h2 className="text-2xl font-black flex items-center gap-3">
+                  <Bell size={28} /> Próximas Citas (en 3 días)
+                </h2>
+                <p className="text-amber-100 font-bold text-sm mt-1">
+                  Fecha a recordar: {formattedFutureDate}
+                </p>
+              </div>
+              <button onClick={() => setShowUpcomingAppts(false)} className="p-2 bg-white/20 hover:bg-rose-500 rounded-xl transition-all">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-8 space-y-4">
+              {upcomingAppointmentsList.length > 0 ? (
+                upcomingAppointmentsList.map((appt) => (
+                  <div key={appt.id} className="p-5 border-l-4 border-amber-400 bg-amber-50 rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-sm gap-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-black tracking-widest">{appt.time}</span>
+                        <span className="font-bold text-slate-700 text-sm">{appt.reason}</span>
+                      </div>
+                      <p className="text-lg font-black text-slate-800">
+                        {appt.petName} <span className="text-sm font-medium text-slate-500">Dueño: {appt.ownerName}</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleSendWhatsAppReminder(appt.ownerPhone, appt.ownerName, appt.petName, appt.reason, appt.date, appt.time)}
+                      className="w-full sm:w-auto p-3 bg-[#25D366] text-white hover:bg-[#128C7E] rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm font-black"
+                    >
+                      <Phone size={16} /> Avisar por WhatsApp
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10">
+                  <div className="bg-slate-100 p-4 rounded-full inline-block mb-4"><Bell size={40} className="text-slate-400" /></div>
+                  <p className="text-slate-500 font-bold text-lg">No hay pacientes agendados para dentro de 3 días.</p>
                 </div>
               )}
             </div>
