@@ -35,8 +35,202 @@ import {
   AlertTriangle,
   Clipboard,
   Clock,
-  Bell
+  Bell,
+  Stethoscope,
+  Pill,
+  Syringe,
+  Scissors,
+  Tag,
+  Users,
+  Package,
+  ShoppingBag,
 } from "lucide-react";
+
+// =====================================================================
+// 🩺 IDENTIDAD VISUAL: "consultorio cálido"
+// =====================================================================
+
+// Papel tapiz de consultorio: huellitas y cruces médicas muy suaves sobre menta.
+// (Reemplaza las manchas borrosas, que además gastaban mucha batería en tablets.)
+const PATRON_CONSULTORIO = `url("data:image/svg+xml,${encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><g fill='#0d9488' fill-opacity='0.075' transform='translate(32 34) rotate(-18)'><ellipse cx='0' cy='8' rx='9' ry='7.5'/><circle cx='-9' cy='-4' r='3.6'/><circle cx='-3.2' cy='-9.5' r='3.6'/><circle cx='3.2' cy='-9.5' r='3.6'/><circle cx='9' cy='-4' r='3.6'/></g><g fill='#f43f5e' fill-opacity='0.06' transform='translate(116 48)'><rect x='-2.5' y='-8' width='5' height='16' rx='1.6'/><rect x='-8' y='-2.5' width='16' height='5' rx='1.6'/></g><g fill='#0d9488' fill-opacity='0.055' transform='translate(112 122) rotate(24) scale(0.8)'><ellipse cx='0' cy='8' rx='9' ry='7.5'/><circle cx='-9' cy='-4' r='3.6'/><circle cx='-3.2' cy='-9.5' r='3.6'/><circle cx='3.2' cy='-9.5' r='3.6'/><circle cx='9' cy='-4' r='3.6'/></g><g fill='#0d9488' fill-opacity='0.05' transform='translate(38 118) scale(0.75)'><rect x='-2.5' y='-8' width='5' height='16' rx='1.6'/><rect x='-8' y='-2.5' width='16' height='5' rx='1.6'/></g></svg>",
+)}")`;
+
+const ClinicBackdrop = () => (
+  <div
+    aria-hidden="true"
+    className="fixed inset-0 -z-10 pointer-events-none bg-[#eef8f6]"
+    style={{ backgroundImage: PATRON_CONSULTORIO, backgroundSize: "160px 160px" }}
+  >
+    <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/20 to-teal-50/70" />
+  </div>
+);
+
+// El detalle distintivo: una línea de latido (electrocardiograma) que termina en huellita.
+const HeartbeatPaw = ({ className = "" }) => (
+  <svg viewBox="0 0 230 30" className={className} fill="none" aria-hidden="true">
+    <path
+      className="latido-trazo"
+      pathLength="1"
+      d="M2 17 H72 L80 17 L86 7 L94 27 L102 3 L110 23 L116 17 H190"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* posición y animación en grupos separados (la animación CSS pisaría el translate) */}
+    <g transform="translate(208 16)">
+      <g className="latido-huella" fill="currentColor">
+        <ellipse cx="0" cy="4" rx="5.6" ry="4.6" />
+        <circle cx="-5.6" cy="-3" r="2.3" />
+        <circle cx="-2" cy="-6.6" r="2.3" />
+        <circle cx="2" cy="-6.6" r="2.3" />
+        <circle cx="5.6" cy="-3" r="2.3" />
+      </g>
+    </g>
+  </svg>
+);
+
+// Cada categoría del almacén con su ícono y color (información, no decoración)
+const CATEGORIAS_ESTILO = {
+  Medicamento: { Icon: Pill, cls: "bg-sky-50 text-sky-700 border-sky-200" },
+  Vacuna: { Icon: Syringe, cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  Alimento: { Icon: Bone, cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  Accesorios: { Icon: Tag, cls: "bg-rose-50 text-rose-700 border-rose-200" },
+  Servicio: { Icon: Scissors, cls: "bg-teal-50 text-teal-700 border-teal-200" },
+};
+
+const CategoryBadge = ({ category }) => {
+  const { Icon, cls } = CATEGORIAS_ESTILO[category] || {
+    Icon: Package,
+    cls: "bg-slate-100 text-slate-600 border-slate-200",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${cls}`}>
+      <Icon size={14} />
+      {category}
+    </span>
+  );
+};
+
+// Áreas de negocio de la clínica (punto 1 de la lista de Maru)
+const AREAS = {
+  medico: { label: "Médico", Icon: Stethoscope, cls: "text-sky-700 bg-sky-50 border-sky-200" },
+  estetica: { label: "Estética", Icon: Scissors, cls: "text-teal-700 bg-teal-50 border-teal-200" },
+  tienda: { label: "Tienda", Icon: ShoppingBag, cls: "text-amber-700 bg-amber-50 border-amber-200" },
+};
+// Si el producto no tiene área elegida, se deduce de su categoría
+const areaDe = (p) =>
+  p?.area && AREAS[p.area]
+    ? p.area
+    : ["Medicamento", "Vacuna"].includes(p?.category)
+      ? "medico"
+      : p?.category === "Servicio"
+        ? "estetica"
+        : "tienda";
+
+// ===== Cartilla: vacunas y desparasitación (punto 9) =====
+const SUGERENCIAS_PREVENTIVO = [
+  "Parvovirus (cachorro)",
+  "Séxtuple / Múltiple canina",
+  "Rabia",
+  "Bordetella (tos de las perreras)",
+  "Leptospirosis",
+  "Triple felina",
+  "Leucemia felina",
+  "Desparasitante interno",
+  "Desparasitante externo (pulgas y garrapatas)",
+];
+const TIPOS_PREVENTIVO = {
+  vacuna: { label: "Vacuna", Icon: Syringe },
+  desparasitacion: { label: "Desparasitación", Icon: Pill },
+  otro: { label: "Otro tratamiento", Icon: FileText },
+};
+const INTERVALOS = [
+  ["none", "No se repite"],
+  ["15d", "En 15 días"],
+  ["1m", "En 1 mes"],
+  ["3m", "En 3 meses"],
+  ["6m", "En 6 meses"],
+  ["1y", "En 1 año"],
+  ["custom", "Elegir fecha…"],
+];
+const hoyLocalISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+// Suma un intervalo ("15d", "1m", "3m", "6m", "1y") a una fecha AAAA-MM-DD
+const sumarIntervalo = (iso, intervalo) => {
+  if (!iso || !intervalo || ["none", "custom"].includes(intervalo)) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  const f = new Date(y, m - 1, d);
+  if (intervalo.endsWith("d")) f.setDate(f.getDate() + parseInt(intervalo));
+  else {
+    const meses = intervalo === "1y" ? 12 : parseInt(intervalo);
+    const dia = f.getDate();
+    f.setDate(1);
+    f.setMonth(f.getMonth() + meses);
+    f.setDate(Math.min(dia, new Date(f.getFullYear(), f.getMonth() + 1, 0).getDate()));
+  }
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+};
+// Estado de una próxima dosis: vencida / próxima (30 días) / al día / sin refuerzo
+const estadoDosis = (proxima) => {
+  if (!proxima) return { key: "sin", label: "Sin refuerzo", cls: "bg-slate-100 text-slate-500" };
+  const hoy = hoyLocalISO();
+  const dias = Math.round((new Date(`${proxima}T12:00:00`) - new Date(`${hoy}T12:00:00`)) / 86400000);
+  if (dias < 0) return { key: "vencida", dias, label: `Vencida hace ${-dias} día${dias === -1 ? "" : "s"}`, cls: "bg-rose-100 text-rose-700" };
+  if (dias === 0) return { key: "proxima", dias, label: "Toca hoy", cls: "bg-amber-100 text-amber-800" };
+  if (dias <= 30) return { key: "proxima", dias, label: `En ${dias} día${dias === 1 ? "" : "s"}`, cls: "bg-amber-100 text-amber-800" };
+  return { key: "al-dia", dias, label: "Al día", cls: "bg-teal-100 text-teal-700" };
+};
+
+// ===== Notificaciones al teléfono (Web Push) =====
+const urlBase64ToUint8Array = (b64) => {
+  const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+};
+const esIOS = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const esAppInstalada = () =>
+  window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+const pushSoportado = () =>
+  "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+// Abre WhatsApp con el mensaje ya escrito (en el celular abre la app de WhatsApp)
+const abrirWhatsApp = (telefono, mensaje) => {
+  // api.whatsapp.com directo (wa.me redirige y en el salto se dañan algunos caracteres)
+  const url = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
+  const ventana = window.open(url, "_blank");
+  if (!ventana) window.location.href = url;
+};
+
+// Círculo con la especie del paciente (perrito, gatito u otro)
+const SpeciesAvatar = ({ species, size = 44 }) => {
+  const s = (species || "").toLowerCase();
+  const esGato = s.includes("gat");
+  const Icon = esGato ? Cat : s.includes("perr") ? Dog : PawPrint;
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-2xl border-2 shrink-0 ${esGato ? "bg-rose-50 text-rose-500 border-rose-100" : "bg-teal-50 text-teal-600 border-teal-100"}`}
+      style={{ width: size, height: size }}
+      title={species || "Especie no indicada"}
+    >
+      <Icon size={Math.round(size * 0.55)} />
+    </span>
+  );
+};
+
+// 🛡️ SEGURIDAD: escapa texto antes de meterlo en el HTML de las impresiones
+// (receta, expediente, consentimiento). Así, si alguien escribe código en un
+// nombre desde la Sala de Espera pública, se imprime como texto y no se ejecuta.
+const escapeHtml = (value) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 
 // ✨ COMPONENTE: CAMPO DE FECHA INTELIGENTE (HÍBRIDO PARA TABLETS/MÓVILES)
 const SmartDateInput = ({ value, onChange, className, required }) => {
@@ -44,7 +238,8 @@ const SmartDateInput = ({ value, onChange, className, required }) => {
 
   useEffect(() => {
     if (value && value.includes("-")) {
-      const [y, m, d] = value.split("-");
+      // Solo la parte de la fecha (por si llega "AAAA-MM-DDT00:00:00")
+      const [y, m, d] = value.slice(0, 10).split("-");
       setDisplayValue(`${d}/${m}/${y}`);
     } else {
       setDisplayValue("");
@@ -83,7 +278,7 @@ const SmartDateInput = ({ value, onChange, className, required }) => {
         <Calendar className="text-teal-600 absolute pointer-events-none" size={20} />
         <input
           type="date"
-          value={value || ""}
+          value={value ? value.slice(0, 10) : ""}
           onChange={(e) => onChange(e.target.value)}
           onClick={(e) => {
             try {
@@ -107,6 +302,7 @@ const RegistroPublico = ({ API_BASE }) => {
   const [isReturningCustomer, setIsReturningCustomer] = useState(false);
 
   const [owner, setOwner] = useState({ name: "", phone: "", address: "" });
+  const [folio, setFolio] = useState("");
   const [pet, setPet] = useState({
     name: "",
     species: "Perro",
@@ -119,35 +315,29 @@ const RegistroPublico = ({ API_BASE }) => {
   const submitForm = async () => {
     setLoading(true);
     try {
-      let currentOwnerId = owner.id;
-
-      if (!currentOwnerId) {
-        const resOwner = await axios.post(`${API_BASE}/owners/`, owner);
-        currentOwnerId = resOwner.data.id;
-        setOwner({ ...owner, id: currentOwnerId });
-      }
-
-      await axios.post(`${API_BASE}/pets/`, {
-        ...pet,
-        owner_id: currentOwnerId,
+      // Ruta pública: registra dueño + mascota y NO devuelve datos de nadie
+      const res = await axios.post(`${API_BASE}/public/registro`, {
+        owner: { name: owner.name, phone: owner.phone, address: owner.address },
+        pet,
       });
-
+      setFolio(res.data.folio);
       setStep(3);
     } catch (err) {
-      alert("Error al guardar. Por favor, avisa en recepción.");
-      console.error(err);
+      const detail = err.response?.data?.detail;
+      Swal.fire(
+        "No se pudo registrar",
+        typeof detail === "string"
+          ? detail
+          : "Revisa tus datos (teléfono de 10 dígitos) o avisa en recepción.",
+        "error",
+      );
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen font-sans text-slate-900 relative flex justify-center items-center p-6 z-0 bg-slate-50">
-      {/* FONDO ANIMADO */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/40 rounded-full blur-[100px] mix-blend-multiply"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/30 rounded-full blur-[120px] mix-blend-multiply"></div>
-        <div className="absolute top-[20%] right-[15%] w-[30vw] h-[30vw] bg-amber-200/40 rounded-full blur-[90px] mix-blend-multiply"></div>
-      </div>
+    <div className="min-h-screen font-sans text-slate-900 relative flex justify-center items-center p-6 z-0">
+      <ClinicBackdrop />
 
       <div className="bg-white/80 backdrop-blur-2xl p-8 rounded-[2rem] shadow-2xl border border-white/50 w-full max-w-md animate-in zoom-in-95 duration-500">
         <div className="flex justify-center mb-4">
@@ -157,16 +347,33 @@ const RegistroPublico = ({ API_BASE }) => {
             className="w-24 h-24 rounded-2xl shadow-md border-2 border-white object-contain bg-white"
           />
         </div>
-        <h2 className="text-2xl font-black text-center text-slate-800 mb-1">
-          Sala de Espera
+        <h2 className="text-3xl font-black text-center text-slate-800 mb-1">
+          {step === 3 ? "¡Registro exitoso!" : "¡Bienvenidos a Dogs & Cats!"}
         </h2>
-        <p className="text-teal-600 text-center font-bold text-sm mb-6 uppercase tracking-wider">
-          {step === 1
-            ? "1. Datos del Titular"
-            : step === 2
-              ? "2. Datos del Paciente"
-              : "¡Registro Exitoso!"}
-        </p>
+        {step !== 3 && (
+          <>
+            <p className="text-slate-500 text-center font-semibold text-sm mb-5">
+              Registra a tu mascota mientras esperas tu turno.
+            </p>
+            <div className="flex items-center justify-center gap-4 mb-6" aria-label={`Paso ${step} de 2`}>
+              {[
+                { n: 1, label: "Tus datos" },
+                { n: 2, label: "Tu mascota" },
+              ].map(({ n, label }, idx) => (
+                <div key={n} className="flex items-center gap-4">
+                  {idx > 0 && (
+                    <span className={`h-0.5 w-8 rounded-full ${step >= n ? "bg-teal-400" : "bg-slate-200"}`} />
+                  )}
+                  <span
+                    className={`flex items-center gap-1.5 text-sm font-bold ${step >= n ? "text-teal-600" : "text-slate-300"}`}
+                  >
+                    <PawPrint size={18} /> {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* PASO 1: DATOS DEL DUEÑO */}
         {step === 1 && (
@@ -329,9 +536,15 @@ const RegistroPublico = ({ API_BASE }) => {
               Tus datos y los de <strong>{pet.name}</strong> ya están seguros en
               nuestro sistema.
             </p>
+            {folio && (
+              <p className="text-teal-700 font-black text-lg mb-6 -mt-4">
+                Folio: {folio}
+              </p>
+            )}
             <button
               onClick={() => {
                 setStep(1);
+                setFolio("");
                 setOwner({ name: "", phone: "", address: "" });
                 setPet({
                   name: "",
@@ -353,19 +566,31 @@ const RegistroPublico = ({ API_BASE }) => {
   );
 };
 
+// En local (npm run dev) se toma de .env.development; en Render (build) usa producción.
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://dogs-and-cats-api.onrender.com";
+
+// La Sala de Espera (/registro) es una pantalla aparte. Se decide AQUÍ, antes de
+// cualquier "hook" de React: así las reglas de React se cumplen siempre.
 function App() {
-  const API_BASE = "https://dogs-and-cats-api.onrender.com";
-  
-  //const API_BASE = "http://127.0.0.1:8000";
-  // --- INTERCEPTOR DE RUTA PUBLICA ---
   if (window.location.pathname === "/registro") {
-    return <RegistroPublico API_BASE={API_BASE} />;
+    return <RegistroPublico API_BASE={API_BASE_URL} />;
   }
+  return <SistemaClinica />;
+}
+
+function SistemaClinica() {
+  const API_BASE = API_BASE_URL;
 
   // --- ESTADOS DE SEGURIDAD ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [authMode, setAuthMode] = useState("login");
+  // --- ADMINISTRACIÓN DE USUARIOS (solo Maru) ---
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [usersList, setUsersList] = useState([]);
+  const emptyUserForm = { username: "", password: "", confirm: "", admin_password: "" };
+  const [newUserForm, setNewUserForm] = useState(emptyUserForm);
   const [authData, setAuthData] = useState({ username: "", password: "" });
 
   // --- ESTADOS GENERALES ---
@@ -412,6 +637,8 @@ function App() {
     quantity: "",
     unit: "piezas",
     price: "",
+    application_price: "",
+    area: "",
     min_stock: "",
     expiration_date: "",
   });
@@ -424,9 +651,90 @@ function App() {
     payment_method: "Efectivo",
   });
   const [cart, setCart] = useState([]);
+  const [isCheckingOut, setIsCheckingOut] = useState(false); // evita doble clic al cobrar
+  const [posArea, setPosArea] = useState("todas"); // pestaña de área en Caja
+  // Pestaña Recetas
+  const [recetaSearch, setRecetaSearch] = useState("");
+  const [recetaPetId, setRecetaPetId] = useState("");
+  // Ventana para agregar o corregir un lote del almacén
+  const emptyLotModal = { open: false, mode: "add", group: null, lot: null, quantity: "", expiration: "" };
+  const [lotModal, setLotModal] = useState(emptyLotModal);
 
   // --- TRANFORMADOR DE FOLIOS ---
   const formatExpediente = (id) => `DC-${String(id).padStart(4, "0")}`;
+
+  // ==========================================
+  // --- DESCARGA DE REPORTES EXCEL ---
+  // Se descargan con axios (y no con window.open) para que viajen con el
+  // token de sesión cuando el backend empiece a pedirlo.
+  // ==========================================
+  const toISODate = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const downloadExcel = async (path, params, filename) => {
+    try {
+      const res = await axios.get(`${API_BASE}${path}`, {
+        params,
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      let msg = "No se pudo generar el reporte. Revisa tu conexión.";
+      try {
+        const detail = JSON.parse(await err.response.data.text()).detail;
+        if (detail) msg = detail;
+      } catch {
+        // la respuesta no traía un mensaje legible; usamos el genérico
+      }
+      Swal.fire("Error", msg, "error");
+    }
+  };
+
+  // --- LOTES: un lote está caducado si su fecha ya pasó (hoy todavía se puede usar)
+  const hoyISO = toISODate(new Date());
+  const isExpiredLot = (p) =>
+    p.category !== "Servicio" && !!p.expiration_date && p.expiration_date < hoyISO;
+  const fmtFecha = (iso) => (iso ? iso.slice(0, 10).split("-").reverse().join("/") : "");
+
+  // Calcula el rango de fechas según el periodo elegido (hora local de la clínica)
+  const getReportRange = () => {
+    const today = new Date();
+    if (reportPeriod === "week") {
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+      return [toISODate(monday), toISODate(today)];
+    }
+    if (reportPeriod === "month") {
+      return [toISODate(new Date(today.getFullYear(), today.getMonth(), 1)), toISODate(today)];
+    }
+    if (reportPeriod === "lastMonth") {
+      return [
+        toISODate(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+        toISODate(new Date(today.getFullYear(), today.getMonth(), 0)),
+      ];
+    }
+    return [reportStart, reportEnd];
+  };
+
+  const handleDownloadSalesReport = () => {
+    const [inicio, fin] = getReportRange();
+    if (!inicio || !fin) {
+      Swal.fire("Faltan fechas", "Elige la fecha inicial y la fecha final.", "warning");
+      return;
+    }
+    if (fin < inicio) {
+      Swal.fire("Fechas invertidas", "La fecha final no puede ser anterior a la inicial.", "warning");
+      return;
+    }
+    downloadExcel("/reports/sales/", { inicio, fin }, `Ventas_${inicio}_al_${fin}.xlsx`);
+  };
 
   // --- ESTADOS PARA MODALES EXTRAS ---
   const [prescriptionModal, setPrescriptionModal] = useState({
@@ -440,12 +748,25 @@ function App() {
     pet: null,
   });
   const [showTodayAppts, setShowTodayAppts] = useState(false);
-  const [showUpcomingAppts, setShowUpcomingAppts] = useState(false);
+  // Centro de avisos (campanita) + notificaciones al teléfono
+  const [showAvisos, setShowAvisos] = useState(false);
+  // Cartilla (vacunas / desparasitación)
+  const emptyPreventivo = { open: false, pet: null, record: null, tipo: "vacuna", nombre: "", aplicada: "", intervalo: "1y", proxima: "", notas: "" };
+  const [preventivoModal, setPreventivoModal] = useState(emptyPreventivo);
+  const [proximosPreventivos, setProximosPreventivos] = useState([]);
+  // En Caja: a qué paciente se aplicó la vacuna/medicamento
+  const [salePetId, setSalePetId] = useState("");
+  const [saleIntervalo, setSaleIntervalo] = useState("1y");
+  const [avisos, setAvisos] = useState([]);
+  const [pushEstado, setPushEstado] = useState("revisando");
+  const [vapidKey, setVapidKey] = useState("");
   // --- ESTADOS PARA VENTA POR DOSIS/FRACCIÓN ---
   const [isFractionalSale, setIsFractionalSale] = useState(false);
   const [fractionCapacity, setFractionCapacity] = useState("");
   const [fractionAmount, setFractionAmount] = useState("");
   const [targetMoney, setTargetMoney] = useState("");
+  // Vacunas/medicamentos: descontar la dosis usada pero cobrar el precio por aplicación
+  const [chargeByApplication, setChargeByApplication] = useState(true);
 
   // --- ESTADOS PARA LA LLAMADA DE LOS HORARIOS ---
   const [bookedTimes, setBookedTimes] = useState([]);
@@ -458,6 +779,11 @@ function App() {
     amount: "",
   });
   const [amountPaid, setAmountPaid] = useState("");
+
+  // --- ESTADOS DEL REPORTE DE VENTAS (CONTADOR) ---
+  const [reportPeriod, setReportPeriod] = useState("week");
+  const [reportStart, setReportStart] = useState("");
+  const [reportEnd, setReportEnd] = useState("");
 
   // --- CONFIGURACIÓN DE SWEETALERT (TEMA MASCOTAS Y TEAL) ---
   const Toast = Swal.mixin({
@@ -533,9 +859,17 @@ function App() {
       axios.defaults.headers.common["Authorization"] = `Bearer ${savedToken}`;
       setCurrentUser(savedUser);
       setIsAuthenticated(true);
+      fetchMe();
       fetchData();
       fetchProducts();
       fetchSales();
+      fetchAvisos();
+      fetchPreventivos();
+      // Si se abrió desde una notificación (…/?avisos=1), mostrar el Centro de avisos
+      if (new URLSearchParams(window.location.search).has("avisos")) {
+        abrirCentroAvisos();
+        window.history.replaceState(null, "", "/");
+      }
     }
     const handleStorageChange = (e) => {
       if (e.key === "vet_sync_trigger" && isAuthenticated) {
@@ -550,12 +884,9 @@ function App() {
 
   useEffect(() => {
     if (newAppt.date) {
-      fetch(`${API_BASE}/appointments/booked-times/${newAppt.date}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Red falló");
-          return res.json();
-        })
-        .then((data) => {
+      axios
+        .get(`${API_BASE}/appointments/booked-times/${newAppt.date}`)
+        .then(({ data }) => {
           if (Array.isArray(data)) {
             setBookedTimes(data);
           } else {
@@ -632,42 +963,308 @@ function App() {
 
       Toast.fire({ icon: "success", title: `¡Bienvenida, ${displayUser}!` });
 
+      fetchMe();
       fetchData();
       fetchProducts();
       fetchSales();
+      fetchAvisos();
+      fetchPreventivos();
     } catch (err) {
+      const codigo = err.response?.status;
       Swal.fire({
         icon: "error",
         title: "Error de acceso",
-        text: "Usuario o contraseña incorrectos.",
+        text:
+          codigo === 429
+            ? err.response?.data?.detail ||
+              "Demasiados intentos fallidos. Espera 15 minutos."
+            : codigo
+              ? "Usuario o contraseña incorrectos."
+              : "No se pudo conectar con el servidor. Revisa tu internet e intenta de nuevo.",
       });
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  // ¿La sesión actual es de la administradora? (lo decide el backend, no la pantalla)
+  const fetchMe = async () => {
     try {
-      // Limpiamos los espacios también al registrar
-      const cleanUsername = authData.username.toLowerCase().trim();
-
-      await axios.post(`${API_BASE}/register/`, {
-        username: cleanUsername,
-        password: authData.password.trim(),
-      });
-      Swal.fire({
-        icon: "success",
-        title: "Registro exitoso",
-        text: "Ahora puedes iniciar sesión.",
-      });
-      setAuthMode("login");
-      setAuthData({ username: "", password: "" });
-    } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: err.response?.data?.detail || "No se pudo crear el usuario.",
-      });
+      const res = await axios.get(`${API_BASE}/me/`);
+      setIsAdmin(!!res.data.is_admin);
+    } catch {
+      setIsAdmin(false);
     }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/users/`);
+      setUsersList(res.data);
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.detail || "No se pudo cargar la lista de usuarios.", "error");
+    }
+  };
+
+  const openUsersModal = () => {
+    setNewUserForm(emptyUserForm);
+    setShowUsersModal(true);
+    fetchUsers();
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    const username = newUserForm.username.toLowerCase().trim();
+    if (newUserForm.password.length < 6) {
+      Swal.fire("Contraseña muy corta", "La contraseña debe tener al menos 6 caracteres.", "warning");
+      return;
+    }
+    if (newUserForm.password !== newUserForm.confirm) {
+      Swal.fire("No coinciden", "La contraseña y su confirmación no son iguales.", "warning");
+      return;
+    }
+    try {
+      await axios.post(`${API_BASE}/register/`, {
+        username,
+        password: newUserForm.password,
+        admin_password: newUserForm.admin_password,
+      });
+      setNewUserForm(emptyUserForm);
+      fetchUsers();
+      Toast.fire({ icon: "success", title: `Usuario "${username}" creado` });
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      Swal.fire(
+        "No se pudo crear",
+        typeof detail === "string" ? detail : "Revisa los datos (usuario de 3+ letras, contraseña de 6+).",
+        "error",
+      );
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    const result = await Swal.fire({
+      title: `¿Eliminar al usuario "${user.username}"?`,
+      text: "Ya no podrá entrar al sistema.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#0d9488",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await axios.delete(`${API_BASE}/users/${user.id}`);
+      fetchUsers();
+      Toast.fire({ icon: "success", title: "Usuario eliminado" });
+    } catch (err) {
+      Swal.fire("Error", err.response?.data?.detail || "No se pudo eliminar.", "error");
+    }
+  };
+
+  // ==========================================
+  // --- CENTRO DE AVISOS (WhatsApp a dueños) ---
+  // ==========================================
+  const fetchAvisos = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/avisos/`);
+      setAvisos(res.data.pendientes || []);
+    } catch {
+      // sin conexión: se reintenta en el próximo refresco
+    }
+  };
+
+  const marcarAvisoEnviado = async (aviso) => {
+    try {
+      if (aviso.tipo === "preventivo")
+        await axios.post(`${API_BASE}/avisos/preventivo/${aviso.record_id}/enviado`);
+      else await axios.post(`${API_BASE}/avisos/${aviso.appt_id}/enviado`, { tipo: aviso.tipo });
+      fetchAvisos();
+      fetchPreventivos();
+    } catch {
+      Swal.fire("Error", "No se pudo marcar el aviso. Intenta de nuevo.", "error");
+    }
+  };
+
+  const enviarAvisoWhatsApp = (aviso) => {
+    abrirWhatsApp(aviso.telefono, aviso.mensaje); // primero abrir (mismo toque)
+    marcarAvisoEnviado(aviso);
+    Toast.fire({ icon: "success", title: "Aviso marcado como enviado" });
+  };
+
+  // ==========================================
+  // --- CARTILLA: vacunas y desparasitación ---
+  // ==========================================
+  const fetchPreventivos = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/preventivos/proximos`, { params: { dias: 30 } });
+      setProximosPreventivos(res.data);
+    } catch {
+      // se reintenta en el próximo refresco
+    }
+  };
+
+  // Recarga dueños y, si hay un expediente abierto, lo actualiza con los datos nuevos
+  const recargarExpediente = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/owners/`);
+      setOwners(res.data);
+      setSelectedOwner((prev) => (prev ? res.data.find((o) => o.id === prev.id) || null : prev));
+    } catch {
+      // sin conexión
+    }
+    fetchPreventivos();
+    fetchAvisos();
+  };
+
+  const abrirPreventivo = (pet, record = null) =>
+    setPreventivoModal({
+      ...emptyPreventivo,
+      open: true,
+      pet,
+      record,
+      tipo: record?.tipo || "vacuna",
+      nombre: record?.nombre || "",
+      aplicada: record?.applied_date || hoyLocalISO(),
+      intervalo: record ? (record.next_due_date ? "custom" : "none") : "1y",
+      proxima: record?.next_due_date || "",
+      notas: record?.notes || "",
+    });
+
+  const guardarPreventivo = async (e) => {
+    e.preventDefault();
+    const m = preventivoModal;
+    if (!m.aplicada) {
+      Swal.fire("Falta la fecha", "Escribe la fecha en que se aplicó.", "warning");
+      return;
+    }
+    const proxima = m.intervalo === "custom" ? m.proxima || null : sumarIntervalo(m.aplicada, m.intervalo);
+    if (proxima && proxima <= m.aplicada) {
+      Swal.fire("Revisa la fecha", "La próxima dosis debe ser después de la aplicación.", "warning");
+      return;
+    }
+    const datos = { tipo: m.tipo, nombre: m.nombre.trim(), applied_date: m.aplicada, next_due_date: proxima, notes: m.notas.trim() || null };
+    try {
+      if (m.record) await axios.put(`${API_BASE}/preventivos/${m.record.id}`, datos);
+      else await axios.post(`${API_BASE}/preventivos/`, { ...datos, pet_id: m.pet.id });
+      Toast.fire({ icon: "success", title: m.record ? "Registro actualizado" : "Anotado en la cartilla 💉" });
+      setPreventivoModal(emptyPreventivo);
+      recargarExpediente();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      Swal.fire("No se pudo guardar", typeof detail === "string" ? detail : "Revisa los datos.", "error");
+    }
+  };
+
+  const borrarPreventivo = async (record) => {
+    const r = await Swal.fire({
+      title: "¿Borrar este registro de la cartilla?",
+      text: `${record.nombre} · aplicada ${fmtFecha(record.applied_date)}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#0d9488",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, borrar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!r.isConfirmed) return;
+    try {
+      await axios.delete(`${API_BASE}/preventivos/${record.id}`);
+      Toast.fire({ icon: "success", title: "Registro borrado" });
+      recargarExpediente();
+    } catch {
+      Swal.fire("Error", "No se pudo borrar.", "error");
+    }
+  };
+
+  // ==========================================
+  // --- NOTIFICACIONES AL TELÉFONO (push) ---
+  // ==========================================
+  const revisarPush = async () => {
+    if (!pushSoportado()) {
+      setPushEstado(esIOS() && !esAppInstalada() ? "instalar-ios" : "no-soportado");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setPushEstado("bloqueado");
+      return;
+    }
+    try {
+      const { data } = await axios.get(`${API_BASE}/push/clave-publica`);
+      setVapidKey(data.publicKey);
+      if (!data.disponible) {
+        setPushEstado("no-configurado");
+        return;
+      }
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg && (await reg.pushManager.getSubscription());
+      if (sub && Notification.permission === "granted") {
+        setPushEstado("activado");
+        // re-registrar por si el servidor no lo tenía (ej. otro usuario en el mismo teléfono)
+        axios
+          .post(`${API_BASE}/push/suscribir`, { ...sub.toJSON(), user_agent: navigator.userAgent })
+          .catch(() => {});
+      } else {
+        setPushEstado("apagado");
+      }
+    } catch {
+      setPushEstado("apagado");
+    }
+  };
+
+  const activarPush = async () => {
+    // Pedir permiso PRIMERO, en el mismo toque (iPhone lo exige así)
+    const permiso = await Notification.requestPermission();
+    if (permiso !== "granted") {
+      setPushEstado(permiso === "denied" ? "bloqueado" : "apagado");
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        });
+      }
+      await axios.post(`${API_BASE}/push/suscribir`, {
+        ...sub.toJSON(),
+        user_agent: navigator.userAgent,
+      });
+      setPushEstado("activado");
+      Toast.fire({ icon: "success", title: "Notificaciones activadas en este dispositivo" });
+    } catch (err) {
+      console.error("No se pudo activar push", err);
+      Swal.fire("No se pudieron activar", "Revisa tu conexión e intenta de nuevo.", "error");
+    }
+  };
+
+  const desactivarPush = async () => {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg && (await reg.pushManager.getSubscription());
+      if (sub) {
+        await axios.post(`${API_BASE}/push/desuscribir`, { endpoint: sub.endpoint }).catch(() => {});
+        await sub.unsubscribe();
+      }
+    } finally {
+      setPushEstado("apagado");
+    }
+  };
+
+  const probarPush = async () => {
+    try {
+      await axios.post(`${API_BASE}/push/prueba`);
+      Toast.fire({ icon: "success", title: "Notificación de prueba enviada" });
+    } catch (err) {
+      Swal.fire("No se pudo enviar", err.response?.data?.detail || "Intenta de nuevo.", "error");
+    }
+  };
+
+  const abrirCentroAvisos = () => {
+    setShowAvisos(true);
+    fetchAvisos();
+    revisarPush();
   };
 
   const handleLogout = () => {
@@ -676,8 +1273,85 @@ function App() {
     localStorage.removeItem("vet_user");
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setIsAdmin(false);
+    setShowUsersModal(false);
+    setShowAvisos(false);
+    setAvisos([]);
     setActiveTab("home");
   };
+
+  // 🔄 Mantener los datos al día entre dispositivos (tablet, PC, celular):
+  // se refresca cada 30 s mientras la pantalla está visible y al volver a ella.
+  // (Antes, si se vendía en un dispositivo, el otro seguía mostrando el stock viejo
+  //  hasta recargar la página y parecía que "no bajaba".)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const refrescar = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchData();
+      fetchProducts();
+      fetchSales();
+      fetchAvisos();
+      fetchPreventivos();
+      if (new URLSearchParams(window.location.search).has("avisos")) {
+        abrirCentroAvisos(); // la app ya estaba abierta y se tocó una notificación
+        window.history.replaceState(null, "", "/");
+      }
+    };
+    const intervalo = setInterval(refrescar, 30000);
+    document.addEventListener("visibilitychange", refrescar);
+    window.addEventListener("focus", refrescar);
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", refrescar);
+      window.removeEventListener("focus", refrescar);
+    };
+  }, [isAuthenticated]);
+
+  // Cuando llega una notificación con la app abierta, actualizar al instante
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const alRecibir = (e) => {
+      if (e.data?.tipo !== "push") return;
+      window.__ultimoPush = e.data; // (útil para diagnóstico)
+      fetchData();
+      fetchAvisos();
+      fetchPreventivos();
+    };
+    navigator.serviceWorker.addEventListener("message", alRecibir);
+    return () => navigator.serviceWorker.removeEventListener("message", alRecibir);
+  }, []);
+
+  // Numerito en el ícono de la app instalada (iPhone y Android) = avisos pendientes
+  useEffect(() => {
+    try {
+      if (avisos.length > 0) navigator.setAppBadge?.(avisos.length);
+      else navigator.clearAppBadge?.();
+    } catch {
+      // el dispositivo no soporta el numerito: no pasa nada
+    }
+  }, [avisos.length]);
+
+  // 🔒 Si el backend rechaza la sesión (token vencido o inválido), salimos y avisamos
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const esLogin = error.config?.url?.endsWith("/login/");
+        if (error.response?.status === 401 && !esLogin && localStorage.getItem("vet_token")) {
+          handleLogout();
+          Swal.fire({
+            icon: "info",
+            title: "Sesión expirada",
+            text: "Por seguridad, vuelve a iniciar sesión.",
+            confirmButtonColor: "#0d9488",
+          });
+        }
+        return Promise.reject(error);
+      },
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
 
   useEffect(() => {
     let timeoutId;
@@ -730,18 +1404,28 @@ function App() {
     const baseName = p.name.split("_@@_")[0].trim();
     const key = baseName.toLowerCase();
 
+    const caducado = isExpiredLot(p);
     if (!inventoryGroupedMap.has(key)) {
       inventoryGroupedMap.set(key, {
         ...p,
         name: baseName,
         totalQuantity: p.category === "Servicio" ? 999999 : p.quantity,
+        availableQuantity: p.category === "Servicio" ? 999999 : caducado ? 0 : p.quantity,
+        expiredQuantity: caducado ? p.quantity : 0,
         allDates:
           p.expiration_date && p.quantity > 0 ? [p.expiration_date] : [],
         subItems: [p],
       });
     } else {
       const group = inventoryGroupedMap.get(key);
-      if (p.category !== "Servicio") group.totalQuantity += p.quantity;
+      if (p.category !== "Servicio") {
+        group.totalQuantity += p.quantity;
+        if (caducado) group.expiredQuantity += p.quantity;
+        else group.availableQuantity += p.quantity;
+      }
+      // el precio por aplicación es del artículo: si algún lote lo tiene, aplica al grupo
+      if (group.application_price == null && p.application_price != null)
+        group.application_price = p.application_price;
       if (
         p.expiration_date &&
         p.quantity > 0 &&
@@ -754,7 +1438,13 @@ function App() {
   });
   const groupedInventory = Array.from(inventoryGroupedMap.values()).map(group => ({
     ...group,
-    totalQuantity: group.category === "Servicio" ? 999999 : parseFloat(Number(group.totalQuantity).toFixed(2))
+    totalQuantity: group.category === "Servicio" ? 999999 : parseFloat(Number(group.totalQuantity).toFixed(2)),
+    availableQuantity: group.category === "Servicio" ? 999999 : parseFloat(Number(group.availableQuantity).toFixed(2)),
+    expiredQuantity: parseFloat(Number(group.expiredQuantity).toFixed(2)),
+    // lotes ordenados: primero el que caduca antes (los sin fecha al final)
+    subItems: [...group.subItems].sort((a, b) =>
+      (a.expiration_date || "9999-12-31").localeCompare(b.expiration_date || "9999-12-31"),
+    ),
   })).sort(
     (a, b) => a.name.localeCompare(b.name),
   );
@@ -776,6 +1466,13 @@ function App() {
           : newProduct.expiration_date || null;
       let unit =
         newProduct.category === "Servicio" ? "servicio" : newProduct.unit;
+      // Precio por aplicación: opcional, solo para vacunas y medicamentos
+      const applicationPrice =
+        ["Vacuna", "Medicamento"].includes(newProduct.category) &&
+        newProduct.application_price !== "" &&
+        newProduct.application_price != null
+          ? parseFloat(newProduct.application_price)
+          : null;
 
       if (editingGroupItems) {
         for (let item of editingGroupItems) {
@@ -783,17 +1480,24 @@ function App() {
             ...item,
             category: newProduct.category,
             price: parseFloat(newProduct.price),
+            application_price: applicationPrice,
+            area: newProduct.area || null,
             unit: unit,
             min_stock: minStock,
           });
         }
         if (qty > 0) {
+          // "Sumar stock" SIEMPRE crea un lote nuevo con su propia caducidad.
+          // (Antes se sumaba al lote viejo y le cambiaba la fecha.)
+          const baseName = newProduct.name.trim();
           await axios.post(`${API_BASE}/products/`, {
             category: newProduct.category,
-            name: newProduct.name, // Usa el mismo nombre exacto para que se agrupe
+            name: `${baseName}_@@_${Math.random().toString(36).substr(2, 5)}`,
             quantity: qty,
             unit: unit,
             price: parseFloat(newProduct.price),
+            application_price: applicationPrice,
+            area: newProduct.area || null,
             min_stock: minStock,
             expiration_date: expDate,
           });
@@ -816,6 +1520,8 @@ function App() {
           quantity: qty,
           unit: unit,
           price: parseFloat(newProduct.price),
+          application_price: applicationPrice,
+          area: newProduct.area || null,
           min_stock: minStock,
           expiration_date: expDate,
         });
@@ -828,6 +1534,8 @@ function App() {
         quantity: "",
         unit: "piezas",
         price: "",
+        application_price: "",
+        area: "",
         min_stock: "",
         expiration_date: "",
       });
@@ -847,6 +1555,8 @@ function App() {
       quantity: "",
       unit: group.unit,
       price: group.price,
+      application_price: group.application_price ?? "",
+      area: group.area || "",
       min_stock: group.min_stock,
       expiration_date: "",
     });
@@ -915,17 +1625,31 @@ function App() {
       displayQuantity = qtyToDeduct;
     }
 
+    // Blindaje: nunca agregar cantidades en cero, negativas o inválidas
+    if (!(qtyToDeduct > 0)) {
+      Swal.fire("Cantidad inválida", "La cantidad debe ser mayor a 0.", "warning");
+      return;
+    }
+    if (isExtraCharge && !(parseFloat(extraDetails.amount) > 0)) {
+      Swal.fire("Cargo extra inválido", "El costo extra debe ser mayor a 0.", "warning");
+      return;
+    }
+
     const currentQtyInCart = cart
       .filter((item) => item.product_key === productGroup.name.toLowerCase())
       .reduce((sum, item) => sum + item.quantityToDeduct, 0); // Revisamos la cantidad real en kg
 
+    // Solo cuenta el stock NO caducado
     if (
       productGroup.category !== "Servicio" &&
-      currentQtyInCart + qtyToDeduct > productGroup.totalQuantity
+      currentQtyInCart + qtyToDeduct > productGroup.availableQuantity + 1e-9
     ) {
       Swal.fire(
         "Stock Insuficiente",
-        `Solo hay ${productGroup.totalQuantity} ${productGroup.unit} disponibles en el almacén.`,
+        `Solo hay ${productGroup.availableQuantity} ${productGroup.unit} disponibles en el almacén.` +
+          (productGroup.expiredQuantity > 0
+            ? ` (Además hay ${productGroup.expiredQuantity} ${productGroup.unit} CADUCADOS que no se pueden vender.)`
+            : ""),
         "warning",
       );
       return;
@@ -933,6 +1657,16 @@ function App() {
 
     const itemsToAdd = [];
     let itemTotal = productGroup.price * qtyToDeduct; // Ej: $115 * 0.5kg = $57.50
+
+    // 💉 Aplicación: se descuenta la fracción usada, pero se cobra el precio fijo por aplicación
+    const esAplicacion =
+      isFractionalSale && chargeByApplication && productGroup.application_price != null;
+    if (esAplicacion) {
+      itemTotal = productGroup.application_price;
+      desc = `${productGroup.name} (Aplicación: ${fractionAmount} de ${fractionCapacity})`;
+      displayQuantity = 1;
+      displayUnit = "aplicación";
+    }
 
     itemsToAdd.push({
       cart_id: Math.random().toString(36).substr(2, 9),
@@ -945,21 +1679,39 @@ function App() {
       quantityToDeduct: qtyToDeduct, // El 0.5 interno para la BD
       total: itemTotal,
       payment_method: newSale.payment_method,
+      // 💉 Cartilla: si se eligió paciente, se anota al cobrar
+      ...(salePetId && ["Vacuna", "Medicamento"].includes(productGroup.category)
+        ? {
+            pet_id: parseInt(salePetId),
+            tipo_preventivo:
+              productGroup.category === "Vacuna"
+                ? "vacuna"
+                : /desparas/i.test(productGroup.name)
+                  ? "desparasitacion"
+                  : "otro",
+            next_due_date: sumarIntervalo(hoyLocalISO(), saleIntervalo),
+            petName: owners.flatMap((o) => o.pets || []).find((x) => String(x.id) === String(salePetId))?.name,
+          }
+        : {}),
     });
 
     if (isExtraCharge) {
       const amt = parseFloat(extraDetails.amount);
-      let extraProd = products.find((p) => p.name === "Cargo Extra Genérico");
+      // Un "cargo extra" interno por área, para que el contador lo vea en el área correcta
+      const areaExtra = areaDe(productGroup);
+      const nombreExtra = `Cargo Extra (${AREAS[areaExtra].label})`;
+      let extraProd = products.find((p) => p.name === nombreExtra);
       if (!extraProd) {
         try {
           const res = await axios.post(`${API_BASE}/products/`, {
             category: "Servicio",
-            name: "Cargo Extra Genérico",
+            name: nombreExtra,
             quantity: 999999,
             unit: "servicio",
             price: 1,
             min_stock: 0,
             expiration_date: null,
+            area: areaExtra,
           });
           extraProd = res.data;
           fetchProducts();
@@ -983,7 +1735,9 @@ function App() {
 
     setCart((prevCart) => [...prevCart, ...itemsToAdd]);
     setNewSale({ ...newSale, product_key: "", quantity: "" });
+    setSalePetId("");
     setIsFractionalSale(false);
+    setChargeByApplication(true);
     setFractionCapacity("");
     setFractionAmount("");
     setTargetMoney("");
@@ -996,46 +1750,141 @@ function App() {
     setCart(cart.filter((item) => item.cart_id !== cart_id));
   };
 
-  const handleCheckoutCart = async () => {
-    if (cart.length === 0) return;
+  // ==========================================
+  // --- LOTES: agregar, corregir y borrar ---
+  // ==========================================
+  const openAddLot = (group) =>
+    setLotModal({ ...emptyLotModal, open: true, mode: "add", group });
+  const openEditLot = (group, lot) =>
+    setLotModal({
+      ...emptyLotModal,
+      open: true,
+      mode: "edit",
+      group,
+      lot,
+      quantity: String(parseFloat(Number(lot.quantity).toFixed(4))),
+      expiration: lot.expiration_date || "",
+    });
+
+  const handleSaveLot = async (e) => {
+    e.preventDefault();
+    const qty = parseFloat(lotModal.quantity);
+    if (!(qty >= 0) || (lotModal.mode === "add" && !(qty > 0))) {
+      Swal.fire("Cantidad inválida", "Escribe una cantidad mayor a 0.", "warning");
+      return;
+    }
     try {
-      for (const item of cart) {
-        let qtyNeeded = item.quantityToDeduct;
-        let lots = products.filter(
-          (p) =>
-            p.name.split("_@@_")[0].trim().toLowerCase() === item.product_key &&
-            (p.category === "Servicio" || p.quantity > 0),
-        );
-        lots.sort((a, b) => {
-          if (!a.expiration_date) return 1;
-          if (!b.expiration_date) return -1;
-          return new Date(a.expiration_date) - new Date(b.expiration_date);
+      if (lotModal.mode === "add") {
+        const g = lotModal.group;
+        await axios.post(`${API_BASE}/products/`, {
+          category: g.category,
+          name: `${g.name}_@@_${Math.random().toString(36).substr(2, 5)}`, // lote nuevo del mismo artículo
+          quantity: qty,
+          unit: g.unit,
+          price: g.price,
+          application_price: g.application_price ?? null,
+          area: g.area || null,
+          min_stock: g.min_stock,
+          expiration_date: lotModal.expiration || null,
         });
-
-        for (let lot of lots) {
-          if (qtyNeeded <= 0) break;
-          let take =
-            lot.category === "Servicio"
-              ? qtyNeeded
-              : Math.min(qtyNeeded, lot.quantity);
-          qtyNeeded -= take;
-          let priceToSend = (item.total / item.quantityToDeduct) * take;
-
-          await axios.post(`${API_BASE}/sales/`, {
-            product_id: lot.id,
-            quantity: take,
-            payment_method: item.payment_method,
-            total_price: priceToSend,
-          });
-          if (lot.category !== "Servicio") {
-            const stockRestante = lot.quantity - take;
-            await axios.put(`${API_BASE}/products/${lot.id}`, {
-              ...lot,
-              quantity: stockRestante, // Mandamos el nuevo stock actualizado
-            });
-          }
-        }
+        Toast.fire({ icon: "success", title: `Lote agregado a ${g.name}` });
+      } else {
+        await axios.patch(`${API_BASE}/products/${lotModal.lot.id}/lote`, {
+          quantity: qty,
+          expiration_date: lotModal.expiration || null,
+        });
+        Toast.fire({ icon: "success", title: "Lote corregido" });
       }
+      setLotModal(emptyLotModal);
+      fetchProducts();
+      triggerSync();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      Swal.fire("No se pudo guardar", typeof detail === "string" ? detail : "Revisa los datos.", "error");
+    }
+  };
+
+  const handleDeleteLot = async (lot) => {
+    const result = await Swal.fire({
+      title: "¿Borrar este lote?",
+      text: `${parseFloat(Number(lot.quantity).toFixed(2))} ${lot.unit}${lot.expiration_date ? ` · vence ${fmtFecha(lot.expiration_date)}` : ""}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#0d9488",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, borrar lote",
+      cancelButtonText: "Cancelar",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await axios.delete(`${API_BASE}/products/${lot.id}`);
+      Toast.fire({ icon: "success", title: "Lote borrado" });
+      fetchProducts();
+      triggerSync();
+    } catch (err) {
+      // Si el lote ya tiene ventas, no se borra (seguridad contable): se sugiere ponerlo en 0
+      const detail = err.response?.data?.detail;
+      Swal.fire({
+        icon: "info",
+        title: "Este lote tiene ventas registradas",
+        text:
+          (typeof detail === "string" ? detail + " " : "") +
+          "Usa el lápiz del lote para corregir su cantidad (por ejemplo, a 0).",
+        confirmButtonColor: "#0d9488",
+      });
+    }
+  };
+
+  // ==========================================
+  // --- CANCELAR UNA VENTA (solo administradora) ---
+  // ==========================================
+  const handleCancelTicket = async (ticket) => {
+    const { isConfirmed, value } = await Swal.fire({
+      title: "¿Cancelar esta venta?",
+      html: `Se regresará el stock al almacén y la venta quedará marcada como cancelada.<br><b>Total: $${ticket.total.toFixed(2)}</b>`,
+      input: "text",
+      inputPlaceholder: "Motivo (opcional), ej. se cobró dos veces",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Sí, cancelar venta",
+      cancelButtonText: "No",
+    });
+    if (!isConfirmed) return;
+    try {
+      const url = ticket.ticketId
+        ? `${API_BASE}/sales/tickets/${ticket.ticketId}/cancel`
+        : `${API_BASE}/sales/${ticket.rows[0].id}/cancel`;
+      await axios.post(url, { reason: value || null });
+      Toast.fire({ icon: "success", title: "Venta cancelada y stock regresado" });
+      fetchSales();
+      fetchProducts();
+      triggerSync();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      Swal.fire("No se pudo cancelar", typeof detail === "string" ? detail : "Intenta de nuevo.", "error");
+    }
+  };
+
+  // Cobra TODO el ticket en una sola petición: el backend lo guarda completo o nada.
+  // (Antes se mandaba una petición por artículo y, si fallaba a la mitad,
+  //  quedaba una venta a medias y al reintentar se cobraba doble.)
+  const handleCheckoutCart = async () => {
+    if (cart.length === 0 || isCheckingOut) return;
+    setIsCheckingOut(true);
+    try {
+      await axios.post(`${API_BASE}/sales/checkout/`, {
+        items: cart.map((item) => ({
+          product_key: item.product_key,
+          quantity: item.quantityToDeduct,
+          total: Math.round(item.total * 100) / 100,
+          payment_method: item.payment_method,
+          pet_id: item.pet_id || null,
+          tipo_preventivo: item.tipo_preventivo || null,
+          next_due_date: item.next_due_date || null,
+        })),
+      });
       Swal.fire({
         icon: "success",
         title: "¡Venta finalizada! 🐾",
@@ -1048,7 +1897,18 @@ function App() {
       fetchSales();
       triggerSync();
     } catch (err) {
-      Swal.fire("Error", "Hubo un fallo de conexión", "error");
+      const detail = err.response?.data?.detail;
+      Swal.fire({
+        icon: "error",
+        title: "No se registró la venta",
+        text:
+          (typeof detail === "string" ? detail + ". " : "Hubo un fallo de conexión. ") +
+          "No se guardó nada del ticket; puedes revisar e intentar de nuevo.",
+        confirmButtonColor: "#0d9488",
+      });
+      fetchProducts(); // refrescamos stock por si cambió mientras tanto
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -1178,7 +2038,7 @@ function App() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_BASE}/pets${id}/delete`);
+        await axios.delete(`${API_BASE}/pets/${id}/delete`);
         fetchData();
         triggerSync();
         Toast.fire({ icon: "success", title: "Paciente eliminado" });
@@ -1199,7 +2059,7 @@ function App() {
         Toast.fire({ icon: "success", title: "Cita actualizada" });
       } else {
         const petIdParaBuscar = parseInt(newAppt.pet_id);
-        await axios.post(`${API_BASE}/appointments/`, {
+        const resCita = await axios.post(`${API_BASE}/appointments/`, {
           ...newAppt,
           pet_id: petIdParaBuscar,
         });
@@ -1219,13 +2079,19 @@ function App() {
             confirmButtonColor: "#25D366",
             cancelButtonColor: "#64748b",
             confirmButtonText: "Sí, enviar mensaje",
-            cancelButtonText: "No, solo guardar",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              const mensaje = `Hola *${ownerOfPet.name}*, te confirmamos la cita de *${selectedPet.name}* para el día *${newAppt.date}* a las *${newAppt.time}*. Motivo: ${newAppt.reason}. ¡Te esperamos en Dogs & Cats! 🐾`;
-              const telLimpio = ownerOfPet.phone.replace(/\D/g, "");
-              const url = `https://wa.me/52${telLimpio}?text=${encodeURIComponent(mensaje)}`;
-              window.open(url, "_blank");
+            cancelButtonText: "Después (queda en la campanita)",
+          }).then(async (result) => {
+            // Mismo mensaje que el Centro de avisos (lo arma el backend)
+            const { data } = await axios.get(`${API_BASE}/avisos/`).catch(() => ({ data: {} }));
+            const aviso = (data.pendientes || []).find(
+              (a) => a.appt_id === resCita.data.id && a.tipo === "confirmacion",
+            );
+            if (result.isConfirmed && aviso?.telefono) {
+              enviarAvisoWhatsApp(aviso);
+            } else {
+              setAvisos(data.pendientes || []);
+              if (!result.isConfirmed)
+                Toast.fire({ icon: "info", title: "La confirmación quedó pendiente en la campanita 🔔" });
             }
           });
         } else {
@@ -1244,7 +2110,19 @@ function App() {
       fetchData();
       triggerSync();
     } catch (err) {
-      Swal.fire("Error", "No se pudo procesar la cita", "error");
+      const detail = err.response?.data?.detail;
+      Swal.fire(
+        err.response?.status === 409 ? "Horario ocupado" : "Error",
+        typeof detail === "string" ? detail : "No se pudo procesar la cita",
+        err.response?.status === 409 ? "warning" : "error",
+      );
+      // refrescamos los horarios ocupados de ese día para que ya no aparezca
+      if (newAppt.date) {
+        axios
+          .get(`${API_BASE}/appointments/booked-times/${newAppt.date}`)
+          .then(({ data }) => setBookedTimes(Array.isArray(data) ? data : []))
+          .catch(() => {});
+      }
     }
   };
 
@@ -1317,7 +2195,7 @@ function App() {
       <!DOCTYPE html>
       <html>
       <head>
-          <title>Receta Médica - ${pet.name}</title>
+          <title>Receta Médica - ${escapeHtml(pet.name)}</title>
           <style>
               @page { size: letter; margin: 1cm; }
               
@@ -1354,16 +2232,16 @@ function App() {
           </div>
 
           <div class="patient-info">
-              <div class="info-item"><span class="info-label">Nombre de la Mascota:</span> ${pet.name}</div>
-              <div class="info-item"><span class="info-label">No. Expediente:</span> <strong style="color:#0d9488;">${formatExpediente(pet.id)}</strong></div>
-              <div class="info-item"><span class="info-label">Fecha:</span> ${new Date().toLocaleDateString()}</div>
-              <div class="info-item"><span class="info-label">Raza:</span> ${pet.breed || "N/E"}</div>
-              <div class="info-item"><span class="info-label">Sexo:</span> ${pet.sex || "N/E"}</div>
-              <div class="info-item"><span class="info-label">Color:</span> ${pet.color || "N/E"}</div>
-              <div class="info-item"><span class="info-label">Diagnóstico:</span> ${appt ? appt.reason : "Consulta General"}</div>
+              <div class="info-item"><span class="info-label">Nombre de la Mascota:</span> ${escapeHtml(pet.name)}</div>
+              <div class="info-item"><span class="info-label">No. Expediente:</span> <strong style="color:#0d9488;">${escapeHtml(formatExpediente(pet.id))}</strong></div>
+              <div class="info-item"><span class="info-label">Fecha:</span> ${escapeHtml(new Date().toLocaleDateString())}</div>
+              <div class="info-item"><span class="info-label">Raza:</span> ${escapeHtml(pet.breed || "N/E")}</div>
+              <div class="info-item"><span class="info-label">Sexo:</span> ${escapeHtml(pet.sex || "N/E")}</div>
+              <div class="info-item"><span class="info-label">Color:</span> ${escapeHtml(pet.color || "N/E")}</div>
+              <div class="info-item"><span class="info-label">Diagnóstico:</span> ${escapeHtml(appt ? appt.reason : "Consulta General")}</div>
           </div>
 
-          <div class="prescription-body">℞<br><br>${text}</div>
+          <div class="prescription-body">℞<br><br>${escapeHtml(text)}</div>
 
           <div class="firma-area">
               <div class="firma-line">FIRMA</div>
@@ -1382,6 +2260,8 @@ function App() {
     `;
     printWindow.document.write(htmlTemplate);
     printWindow.document.close();
+    // Cerrar el editor: así no se puede guardar dos veces la misma receta por accidente
+    setPrescriptionModal({ isOpen: false, pet: null, appt: null, text: "" });
   };
 
   const printExpediente = () => {
@@ -1394,15 +2274,15 @@ function App() {
         petsHtml += `
           <div class="pet-section">
             <div class="pet-header" style="display: flex; justify-content: space-between;">
-              <span>🐾 Paciente: ${p.name}</span>
-              <span>Folio: ${formatExpediente(p.id)}</span>
+              <span>🐾 Paciente: ${escapeHtml(p.name)}</span>
+              <span>Folio: ${escapeHtml(formatExpediente(p.id))}</span>
             </div>
             <div class="pet-info">
-              <span><b>Especie:</b> ${p.species}</span>
-              <span><b>Raza:</b> ${p.breed || "N/E"}</span>
-              <span><b>Sexo:</b> ${p.sex || "N/E"}</span>
-              <span><b>Color:</b> ${p.color || "N/E"}</span>
-              <span><b>Nacimiento:</b> ${p.birth_date || "N/E"}</span>
+              <span><b>Especie:</b> ${escapeHtml(p.species)}</span>
+              <span><b>Raza:</b> ${escapeHtml(p.breed || "N/E")}</span>
+              <span><b>Sexo:</b> ${escapeHtml(p.sex || "N/E")}</span>
+              <span><b>Color:</b> ${escapeHtml(p.color || "N/E")}</span>
+              <span><b>Nacimiento:</b> ${escapeHtml(p.birth_date ? p.birth_date.slice(0, 10).split("-").reverse().join("/") : "N/E")}</span>
             </div>
             <table class="history-table">
               <thead><tr><th>Fecha</th><th>Motivo / Diagnóstico</th><th>Estado</th></tr></thead>
@@ -1413,7 +2293,7 @@ function App() {
             (a, b) => new Date(b.date) - new Date(a.date),
           );
           sortedAppts.forEach((a) => {
-            petsHtml += `<tr><td style="width: 15%;">${a.date}</td><td>${a.reason}</td><td style="width: 15%; font-weight: bold;">${a.status}</td></tr>`;
+            petsHtml += `<tr><td style="width: 15%;">${escapeHtml(a.date)}</td><td>${escapeHtml(a.reason)}</td><td style="width: 15%; font-weight: bold;">${escapeHtml(a.status)}</td></tr>`;
           });
         } else {
           petsHtml += `<tr><td colspan="3" style="text-align: center; font-style: italic; color: #94a3b8;">Sin historial médico ni citas registradas.</td></tr>`;
@@ -1428,7 +2308,7 @@ function App() {
       <!DOCTYPE html>
       <html>
       <head>
-          <title>Expediente Clínico - ${selectedOwner.name}</title>
+          <title>Expediente Clínico - ${escapeHtml(selectedOwner.name)}</title>
           <style>
               body { font-family: 'Arial', sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; line-height: 1.5;}
               .header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 4px solid #0d9488; padding-bottom: 15px; margin-bottom: 20px; }
@@ -1459,14 +2339,14 @@ function App() {
               <img src="/Dogs_&_Cats.jpeg" alt="Dogs and Cats Logo" class="logo" />
               <div class="title-area">
                   <div class="doc-title">Expediente Clínico</div>
-                  <div class="date-print">Fecha de Impresión: ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}</div>
+                  <div class="date-print">Fecha de Impresión: ${escapeHtml(new Date().toLocaleDateString())} a las ${escapeHtml(new Date().toLocaleTimeString())}</div>
               </div>
           </div>
 
           <div class="owner-info">
-              <div><span class="info-label">Cliente / Propietario</span><span class="info-data">${selectedOwner.name}</span></div>
-              <div><span class="info-label">Teléfono de Contacto</span><span class="info-data">${selectedOwner.phone || "No registrado"}</span></div>
-              <div><span class="info-label">Dirección Completa</span><span class="info-data">${selectedOwner.address || "No registrado"}</span></div>
+              <div><span class="info-label">Cliente / Propietario</span><span class="info-data">${escapeHtml(selectedOwner.name)}</span></div>
+              <div><span class="info-label">Teléfono de Contacto</span><span class="info-data">${escapeHtml(selectedOwner.phone || "No registrado")}</span></div>
+              <div><span class="info-label">Dirección Completa</span><span class="info-data">${escapeHtml(selectedOwner.address || "No registrado")}</span></div>
           </div>
 
           ${petsHtml}
@@ -1483,6 +2363,52 @@ function App() {
     `;
     printWindow.document.write(htmlTemplate);
     printWindow.document.close();
+  };
+
+  // 💉 Cartilla de vacunación imprimible
+  const printCartilla = (pet, owner) => {
+    const filas = [...(pet.preventivos || [])]
+      .sort((a, b) => a.applied_date.localeCompare(b.applied_date))
+      .map(
+        (r) => `<tr>
+          <td>${escapeHtml(fmtFecha(r.applied_date))}</td>
+          <td>${escapeHtml((TIPOS_PREVENTIVO[r.tipo] || TIPOS_PREVENTIVO.otro).label)}</td>
+          <td><b>${escapeHtml(r.nombre)}</b>${r.notes ? `<br><small>${escapeHtml(r.notes)}</small>` : ""}</td>
+          <td>${r.next_due_date ? escapeHtml(fmtFecha(r.next_due_date)) : "—"}</td>
+          <td class="firma"></td>
+        </tr>`,
+      )
+      .join("");
+    const w = window.open("", "_blank");
+    w.document.write(`<!DOCTYPE html><html><head><title>Cartilla - ${escapeHtml(pet.name)}</title>
+      <style>
+        @page { size: letter; margin: 1.2cm; }
+        body { font-family: Arial, sans-serif; color: #1e293b; max-width: 800px; margin: 0 auto; }
+        .header { display: flex; align-items: center; gap: 20px; border-bottom: 4px solid #0d9488; padding-bottom: 12px; margin-bottom: 18px; }
+        .logo { width: 110px; } h1 { margin: 0; font-size: 24px; } .sub { color: #475569; font-weight: bold; font-size: 13px; }
+        .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; }
+        .datos b { color: #0d9488; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #0d9488; color: #fff; text-align: left; padding: 8px; font-size: 12px; }
+        td { border-bottom: 1px solid #e2e8f0; padding: 9px 8px; vertical-align: top; }
+        td.firma { width: 110px; } tr:nth-child(even) td { background: #f8fafc; }
+        .pie { margin-top: 24px; font-size: 11px; color: #64748b; text-align: center; }
+      </style></head><body>
+      <div class="header"><img src="/Dogs_&_Cats.jpeg" class="logo" alt="Dogs & Cats">
+        <div><h1>Cartilla de Vacunación y Desparasitación</h1>
+        <div class="sub">M.V.Z. María Eugenia Peña Acosta · Céd. Prof. 6992889</div></div></div>
+      <div class="datos">
+        <div><b>Paciente:</b> ${escapeHtml(pet.name)}</div><div><b>Expediente:</b> ${escapeHtml(formatExpediente(pet.id))}</div>
+        <div><b>Especie / Raza:</b> ${escapeHtml(pet.species || "N/E")} · ${escapeHtml(pet.breed || "N/E")}</div>
+        <div><b>Sexo / Color:</b> ${escapeHtml(pet.sex || "N/E")} · ${escapeHtml(pet.color || "N/E")}</div>
+        <div><b>Nacimiento:</b> ${escapeHtml(pet.birth_date ? fmtFecha(pet.birth_date) : "N/E")}</div>
+        <div><b>Propietario:</b> ${escapeHtml(owner?.name || "")} · ${escapeHtml(owner?.phone || "")}</div>
+      </div>
+      <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Vacuna / tratamiento</th><th>Próxima dosis</th><th>Firma / sello</th></tr></thead>
+      <tbody>${filas}</tbody></table>
+      <div class="pie">Dogs & Cats · Calle Catarroja Esq. Medina Celli No. 39, Col. Cerro de la Estrella, Iztapalapa, CDMX · 55 5443 8436</div>
+      <script>setTimeout(() => window.print(), 500);</script></body></html>`);
+    w.document.close();
   };
 
   const printSurgeryAuth = (pet, owner) => {
@@ -1508,7 +2434,7 @@ function App() {
       <!DOCTYPE html>
       <html>
       <head>
-          <title>Ficha y Consentimiento - ${pet.name}</title>
+          <title>Ficha y Consentimiento - ${escapeHtml(pet.name)}</title>
           <style>
               /* Forzamos a que sea tamaño carta y ajustamos los márgenes al límite */
               @page { size: letter; margin: 1cm; }
@@ -1553,8 +2479,8 @@ function App() {
                   <div class="main-title">FICHA CLÍNICA Y AUTORIZACIÓN DE PROCEDIMIENTO</div>
                   <div class="doctor-info">M.V.Z. MARÍA EUGENIA PEÑA ACOSTA | CED. PROFESIONAL. 6992889</div>
                   <div class="date-row">
-                      <div>Expediente: <span style="text-decoration: underline;">${folio}</span></div>
-                      <div>Fecha: <span style="text-decoration: underline;">${today}</span></div>
+                      <div>Expediente: <span style="text-decoration: underline;">${escapeHtml(folio)}</span></div>
+                      <div>Fecha: <span style="text-decoration: underline;">${escapeHtml(today)}</span></div>
                   </div>
               </div>
           </div>
@@ -1562,47 +2488,47 @@ function App() {
           <div class="ficha-container">
               <div class="form-row">
                   <div class="form-label">Nombre del Propietario</div>
-                  <div class="form-line">${owner.name}</div>
+                  <div class="form-line">${escapeHtml(owner.name)}</div>
               </div>
               <div class="form-row">
                   <div class="form-label">Domicilio</div>
-                  <div class="form-line">${owner.address || "_________________________________________"}</div>
+                  <div class="form-line">${escapeHtml(owner.address || "_________________________________________")}</div>
               </div>
               <div class="form-row">
                   <div class="form-label">Teléfono</div>
-                  <div class="form-line">${owner.phone || "_________________________________________"}</div>
+                  <div class="form-line">${escapeHtml(owner.phone || "_________________________________________")}</div>
               </div>
               
               <div class="form-col-2" style="margin-top: 10px;">
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Nombre de la mascota</div>
-                      <div class="form-line">${pet.name}</div>
+                      <div class="form-line">${escapeHtml(pet.name)}</div>
                   </div>
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Especie</div>
-                      <div class="form-line">${pet.species}</div>
+                      <div class="form-line">${escapeHtml(pet.species)}</div>
                   </div>
               </div>
 
               <div class="form-col-2">
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Raza</div>
-                      <div class="form-line">${pet.breed || "________________"}</div>
+                      <div class="form-line">${escapeHtml(pet.breed || "________________")}</div>
                   </div>
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Color</div>
-                      <div class="form-line">${pet.color || "________________"}</div>
+                      <div class="form-line">${escapeHtml(pet.color || "________________")}</div>
                   </div>
               </div>
 
               <div class="form-col-2">
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Sexo</div>
-                      <div class="form-line">${pet.sex || "________________"}</div>
+                      <div class="form-line">${escapeHtml(pet.sex || "________________")}</div>
                   </div>
                   <div class="form-row" style="margin-bottom:0;">
                       <div class="form-label">Edad (aprox)</div>
-                      <div class="form-line">${edad}</div>
+                      <div class="form-line">${escapeHtml(edad)}</div>
                   </div>
               </div>
           </div>
@@ -1610,7 +2536,7 @@ function App() {
           <div class="sub-title">CONSENTIMIENTO INFORMADO</div>
 
           <div class="content-text">
-              Yo, <strong>${owner.name}</strong>, propietario(a) de la mascota <strong>${pet.name}</strong> autorizo de manera libre y consciente la realización del procedimiento quirúrgico y la aplicación de anestésicos, medicamentos y materiales necesarios para la atención de mi mascota, en las instalaciones del Consultorio Veterinario Dogs & Cats.
+              Yo, <strong>${escapeHtml(owner.name)}</strong>, propietario(a) de la mascota <strong>${escapeHtml(pet.name)}</strong> autorizo de manera libre y consciente la realización del procedimiento quirúrgico y la aplicación de anestésicos, medicamentos y materiales necesarios para la atención de mi mascota, en las instalaciones del Consultorio Veterinario Dogs & Cats.
           </div>
 
           <div class="content-text">
@@ -1674,6 +2600,28 @@ function App() {
     printWindow.document.close();
   };
 
+  // --- RECETAS: todas las recetas de todos los pacientes, la más reciente primero ---
+  const todasLasRecetas = owners
+    .flatMap((o) =>
+      (o.pets || []).flatMap((pet) =>
+        (pet.appointments || [])
+          .filter((a) => a.prescription_text)
+          .map((appt) => ({ appt, pet, owner: o })),
+      ),
+    )
+    .sort((a, b) => (b.appt.date || "").localeCompare(a.appt.date || "") || b.appt.id - a.appt.id);
+  const recetasFiltradas = todasLasRecetas.filter(({ appt, pet, owner }) => {
+    const q = recetaSearch.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      pet.name.toLowerCase().includes(q) ||
+      owner.name.toLowerCase().includes(q) ||
+      formatExpediente(pet.id).toLowerCase().includes(q) ||
+      (appt.reason || "").toLowerCase().includes(q) ||
+      (appt.prescription_text || "").toLowerCase().includes(q)
+    );
+  });
+
   // --- LÓGICA DE CÁLCULO Y ALERTAS DE INVENTARIO ---
   const totalOwners = owners?.length || 0;
   const totalPets =
@@ -1704,10 +2652,54 @@ function App() {
 
   const todayAppointments = todayAppointmentsList.length;
 
+  // Saludo según la hora y fecha larga en español (ej. "martes, 3 de noviembre")
+  const horaActual = new Date().getHours();
+  const saludoDelDia =
+    horaActual < 12 ? "Buenos días" : horaActual < 19 ? "Buenas tardes" : "Buenas noches";
+  const fechaLarga = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   const todayDateString = new Date().toLocaleDateString();
-  const todaySales = sales.filter(
+  const todaySalesAll = sales.filter(
     (s) => new Date(s.sale_date).toLocaleDateString() === todayDateString,
   );
+  const todaySales = todaySalesAll.filter((s) => !s.cancelled_at); // las canceladas no suman
+  const ventasHoyPorArea = todaySales.reduce((acc, s) => {
+    const k = areaDe(products.find((x) => x.id === s.product_id));
+    acc[k] = (acc[k] || 0) + s.total_price;
+    return acc;
+  }, {});
+
+  // Ventas de hoy agrupadas por ticket (un cobro = un ticket)
+  const nombreDeProducto = (id) => {
+    const p = products.find((x) => x.id === id);
+    return p ? p.name.split("_@@_")[0].trim() : "Artículo eliminado";
+  };
+  const todayTickets = Object.values(
+    todaySalesAll.reduce((acc, s) => {
+      const key = s.ticket_id || `venta-${s.id}`;
+      if (!acc[key]) acc[key] = { key, ticketId: s.ticket_id, rows: [], total: 0, date: s.sale_date };
+      acc[key].rows.push(s);
+      acc[key].total += s.total_price;
+      return acc;
+    }, {}),
+  )
+    .map((t) => ({
+      ...t,
+      cancelled: t.rows.every((r) => r.cancelled_at),
+      methods: [...new Set(t.rows.map((r) => r.payment_method))].join(" + "),
+      items: Object.entries(
+        t.rows.reduce((acc, r) => {
+          const n = nombreDeProducto(r.product_id);
+          acc[n] = (acc[n] || 0) + r.quantity;
+          return acc;
+        }, {}),
+      ).map(([n, q]) => `${n} (${parseFloat(q.toFixed(3))})`),
+    }))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
   const todayTotalRevenue = todaySales.reduce(
     (sum, s) => sum + s.total_price,
     0,
@@ -1737,7 +2729,7 @@ function App() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const lowStockProducts = groupedInventory.filter(
-    (p) => p.totalQuantity <= p.min_stock && p.category !== "Servicio",
+    (p) => p.availableQuantity <= p.min_stock && p.category !== "Servicio",
   );
   const expiringProducts = products
     .filter((p) => {
@@ -1750,7 +2742,7 @@ function App() {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays <= 30;
     })
-    .map((p) => ({ ...p, cleanName: p.name.split("_@@_")[0].trim() }));
+    .map((p) => ({ ...p, cleanName: p.name.split("_@@_")[0].trim(), caducado: isExpiredLot(p) }));
 
   // --- CÁLCULOS DE PRECIO Y TOTAL ---
   const selectedProductGroup = groupedInventory.find(
@@ -1761,7 +2753,11 @@ function App() {
   if (selectedProductGroup) {
     const unitPrice = selectedProductGroup.price;
     let totalCalc = 0;
-    if (isFractionalSale && fractionCapacity && fractionAmount) {
+    if (
+      isFractionalSale && chargeByApplication && selectedProductGroup.application_price != null
+    ) {
+      totalCalc = selectedProductGroup.application_price; // precio fijo por aplicación
+    } else if (isFractionalSale && fractionCapacity && fractionAmount) {
       totalCalc = unitPrice * (parseFloat(fractionAmount) / parseFloat(fractionCapacity || 1));
     } else if (!isFractionalSale && newSale.quantity) {
       totalCalc = unitPrice * parseFloat(newSale.quantity);
@@ -1771,55 +2767,13 @@ function App() {
 
   const cartGrandTotal = cart.reduce((sum, item) => sum + item.total, 0);
 
-  // ✨ MAGIA: Calculamos qué día será exactamente en 3 días
-  const futureObj = new Date();
-  futureObj.setDate(futureObj.getDate() + 3);
-  const formattedFutureDate = `${futureObj.getFullYear()}-${String(futureObj.getMonth() + 1).padStart(2, "0")}-${String(futureObj.getDate()).padStart(2, "0")}`;
-
-  // ✨ MAGIA: Filtramos a los pacientes que vienen en 3 días
-  const upcomingAppointmentsList = owners
-    ?.flatMap((owner) =>
-      (owner.pets || []).flatMap((pet) =>
-        (pet.appointments || [])
-          .filter((a) => a.date === formattedFutureDate && a.status === "Pendiente")
-          .map((a) => ({
-            ...a,
-            petName: pet.name,
-            ownerName: owner.name,
-            ownerPhone: owner.phone,
-          }))
-      )
-    ).sort((a, b) => a.time.localeCompare(b.time)) || [];
-
-  // ✨ FUNCION: Disparar el mensaje de WhatsApp
-  const handleSendWhatsAppReminder = (phone, ownerName, petName, reason, date, time) => {
-    if (!phone) {
-      Swal.fire("Sin teléfono", "Este cliente no tiene un teléfono registrado.", "warning");
-      return;
-    }
-    let cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length === 10) cleanPhone = `52${cleanPhone}`; // Asume lada 52 de México
-    const msg = `¡Hola, ${ownerName}! 🐾 Te escribimos de Dogs & Cats. Queremos recordarte que ${petName} tiene programada su visita para "${reason}" el próximo ${date} a las ${time}. ¡Los esperamos!`;
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-  
   // ==========================================
   // --- PANTALLA DE LOGIN (MODERNA) ---
   // ==========================================
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen font-sans text-slate-900 selection:bg-teal-100 relative flex justify-center items-center p-6 z-0">
-        {/* FONDO ANIMADO BOKEH Y MASCOTAS (Consistente con el interior) */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-slate-50">
-          <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/40 rounded-full blur-[100px] mix-blend-multiply"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/30 rounded-full blur-[120px] mix-blend-multiply"></div>
-          <div className="absolute top-[20%] right-[15%] w-[30vw] h-[30vw] bg-amber-200/40 rounded-full blur-[90px] mix-blend-multiply"></div>
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTllOWU5Ii8+PC9zdmc+')] opacity-50"></div>
-
-          <PawPrint className="absolute top-[15%] left-[15%] text-teal-600/10 -rotate-12 w-32 h-32" />
-          <Cat className="absolute bottom-[20%] left-[10%] text-rose-600/10 rotate-12 w-48 h-48" />
-          <Dog className="absolute bottom-[15%] right-[15%] text-teal-600/10 -rotate-12 w-40 h-40" />
-        </div>
+        <ClinicBackdrop />
 
         {/* TARJETA DE LOGIN CRISTAL */}
         <div className="bg-white/70 backdrop-blur-2xl p-10 rounded-[3rem] shadow-2xl border border-white/50 w-full max-w-md animate-in zoom-in-95 duration-700">
@@ -1833,15 +2787,16 @@ function App() {
             </div>
           </div>
 
-          <h2 className="text-3xl font-black text-slate-800 text-center mb-1 tracking-tight">
-            {authMode === "login" ? "DOGS AND CATS" : "Nuevo Usuario"}
+          <h2 className="text-4xl font-black text-slate-800 text-center tracking-tight">
+            Dogs <span className="text-rose-500">&</span> Cats
           </h2>
-          <p className="text-teal-600 text-center mb-8 font-bold uppercase tracking-widest text-xs">
-            {authMode === "login" ? "Acceso al Sistema" : "Registro de Sistema"}
+          <HeartbeatPaw className="w-56 mx-auto text-teal-500 mt-1 mb-2" />
+          <p className="text-slate-500 text-center mb-8 font-semibold text-sm">
+            Consultorio veterinario · Acceso del personal
           </p>
 
           <form
-            onSubmit={authMode === "login" ? handleLogin : handleRegister}
+            onSubmit={handleLogin}
             className="flex flex-col gap-5"
           >
             <div className="group relative">
@@ -1880,29 +2835,11 @@ function App() {
               type="submit"
               className="w-full mt-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-teal-500/30 text-lg flex justify-center items-center gap-2"
             >
-              {authMode === "login" ? (
-                <>
-                  <Lock size={20} /> Entrar
-                </>
-              ) : (
-                <>
-                  <User size={20} /> Registrar
-                </>
-              )}
+              <Lock size={20} /> Entrar
             </button>
           </form>
 
-          <button
-            onClick={() => {
-              setAuthMode(authMode === "login" ? "register" : "login");
-              setAuthData({ username: "", password: "" });
-            }}
-            className="w-full mt-8 text-slate-500 hover:text-teal-600 transition-colors text-sm font-bold"
-          >
-            {authMode === "login"
-              ? "¿No tienes cuenta? Crea una aquí"
-              : "Volver a Iniciar Sesión"}
-          </button>
+          {/* Crear usuarios NO es público: solo la administradora, desde su sesión. */}
         </div>
       </div>
     );
@@ -1914,24 +2851,8 @@ function App() {
   return (
     <div className="min-h-screen font-sans text-slate-900 selection:bg-teal-100 relative z-0">
       <div className="max-w-[1400px] mx-auto p-4 md:p-8">
-        {/* --- FONDO ANIMADO BOKEH Y MASCOTAS --- */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-slate-50">
-          {/* Luces difuminadas (Efecto Bokeh) */}
-          <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-teal-300/30 rounded-full blur-[100px] mix-blend-multiply"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-300/20 rounded-full blur-[120px] mix-blend-multiply"></div>
-          <div className="absolute top-[20%] right-[15%] w-[30vw] h-[30vw] bg-amber-200/30 rounded-full blur-[90px] mix-blend-multiply"></div>
+        <ClinicBackdrop />
 
-          {/* Patrón de puntitos sutil para darle textura */}
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTllOWU5Ii8+PC9zdmc+')] opacity-50"></div>
-
-          {/* Animalitos y huellas flotando en el fondo */}
-          <PawPrint className="absolute top-[15%] left-[5%] text-teal-600/5 -rotate-12 w-32 h-32" />
-          <Cat className="absolute bottom-[20%] left-[10%] text-rose-600/5 rotate-12 w-48 h-48" />
-          <Bone className="absolute top-[30%] right-[8%] text-amber-600/5 rotate-45 w-24 h-24" />
-          <Dog className="absolute bottom-[10%] right-[25%] text-teal-600/5 -rotate-12 w-40 h-40" />
-        </div>
-
-        <div className="max-w-[1400px] mx-auto p-4 md:p-8"></div>
         {/* HEADER BRANDING (EFECTO CRISTAL) */}
         <header className="flex flex-col md:flex-row justify-between items-center mb-8 bg-white/70 backdrop-blur-xl p-6 rounded-[2rem] shadow-sm border-b-4 border-rose-400 border-x border-t border-white/50 gap-6">
           <div className="flex items-center gap-5">
@@ -1943,27 +2864,28 @@ function App() {
               />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
                 DOGS <span className="text-rose-500">AND</span> CATS
               </h1>
+              <HeartbeatPaw className="w-44 text-teal-500 -mt-0.5" />
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <PawPrint size={16} className="text-teal-500 animate-bounce" />
-                  <p className="text-teal-700 text-sm font-bold uppercase tracking-widest">
-                    Veterinaria • {currentUser}
+                  <Stethoscope size={16} className="text-teal-600" />
+                  <p className="text-teal-800 text-sm font-bold">
+                    Consultorio veterinario · {currentUser}
                   </p>
                 </div>
                 
                 {/* ✨ LA CAMPANITA DE NOTIFICACIONES ✨ */}
-                <button 
-                  onClick={() => setShowUpcomingAppts(true)}
-                  className="relative p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-all"
-                  title="Recordatorios de Citas"
+                <button
+                  onClick={abrirCentroAvisos}
+                  className={`relative p-2 rounded-full transition-all ${avisos.length > 0 ? "text-amber-500 bg-amber-50" : "text-slate-400 hover:text-amber-500 hover:bg-amber-50"}`}
+                  title="Centro de avisos: WhatsApp a dueños y notificaciones"
                 >
                   <Bell size={20} />
-                  {upcomingAppointmentsList.length > 0 && (
-                    <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-black w-4 h-4 flex items-center justify-center rounded-full animate-pulse">
-                      {upcomingAppointmentsList.length}
+                  {avisos.length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-black min-w-4 h-4 px-1 flex items-center justify-center rounded-full">
+                      {avisos.length}
                     </span>
                   )}
                 </button>
@@ -1976,13 +2898,13 @@ function App() {
               onClick={() => setActiveTab("home")}
               className={`px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "home" ? "bg-white text-teal-600 shadow-md border border-teal-100" : "text-slate-500 hover:text-teal-700 hover:bg-white/40"}`}
             >
-              <Dog size={18} /> Clínica
+              <Stethoscope size={18} /> Clínica
             </button>
             <button
               onClick={() => setActiveTab("inventory")}
               className={`px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "inventory" ? "bg-white text-teal-600 shadow-md border border-teal-100" : "text-slate-500 hover:text-teal-700 hover:bg-white/40"}`}
             >
-              <Bone size={18} /> Almacén
+              <Pill size={18} /> Almacén
             </button>
             <button
               onClick={() => setActiveTab("pos")}
@@ -1990,8 +2912,24 @@ function App() {
             >
               <ShoppingCart size={18} /> Caja
             </button>
+            <button
+              onClick={() => setActiveTab("recetas")}
+              className={`px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "recetas" ? "bg-white text-teal-600 shadow-md border border-teal-100" : "text-slate-500 hover:text-teal-700 hover:bg-white/40"}`}
+            >
+              <FileText size={18} /> Recetas
+            </button>
           </nav>
 
+          <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={openUsersModal}
+              className="flex items-center gap-2 bg-indigo-50/80 text-indigo-600 hover:bg-indigo-500 hover:text-white px-5 py-3 rounded-2xl font-bold transition-all border border-indigo-100"
+              title="Administrar usuarios (solo administradora)"
+            >
+              <Key size={20} /> Usuarios
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="group flex items-center gap-2 bg-rose-50/80 text-rose-600 hover:bg-rose-500 hover:text-white px-6 py-3 rounded-2xl font-bold transition-all border border-rose-100"
@@ -2002,17 +2940,35 @@ function App() {
             />{" "}
             Salir
           </button>
+          </div>
         </header>
 
         {/* --- PANTALLA INICIO (CLÍNICA) --- */}
         {activeTab === "home" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* SALUDO DEL DÍA */}
+            <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-2 px-2">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-black text-slate-800 leading-tight">
+                  {saludoDelDia}, {(currentUser || "").split(" ")[0]}
+                </h2>
+                <p className="text-slate-500 font-semibold first-letter:uppercase">{fechaLarga}</p>
+              </div>
+              <p className="flex items-center gap-2 text-teal-800 font-bold">
+                <Stethoscope size={18} className="text-teal-600" />
+                {todayAppointments === 0
+                  ? "Sin citas pendientes para hoy"
+                  : todayAppointments === 1
+                    ? "Hoy hay 1 cita pendiente"
+                    : `Hoy hay ${todayAppointments} citas pendientes`}
+              </p>
+            </div>
             {/* BRANDED DASHBOARD CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
               {/* Tarjeta Azul Marino Profundo */}
               <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
                 <div className="absolute right-[-10px] bottom-[-20px] opacity-20 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                  <User size={140} />
+                  <Users size={140} />
                 </div>
                 <h3 className="text-slate-300 font-bold uppercase tracking-widest text-xs mb-2">
                   Familias Registradas
@@ -2049,6 +3005,51 @@ function App() {
                 <p className="text-5xl font-black">{todayAppointments}</p>
               </div>
             </div>
+
+            {/* 💉 VACUNAS Y DESPARASITACIONES POR VENCER (30 días) */}
+            {proximosPreventivos.length > 0 && (
+              <section className="bg-white rounded-[2.5rem] border border-indigo-100 shadow-sm p-6 md:p-8 mb-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-5">
+                  <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                    <Syringe className="text-indigo-500" /> Vacunas y desparasitaciones por vencer
+                  </h3>
+                  <p className="text-sm font-semibold text-slate-500">
+                    Próximos 30 días y vencidas. Los avisos de WhatsApp aparecen en la campanita 7 días antes.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {proximosPreventivos.map((v) => {
+                    const est = estadoDosis(v.proxima);
+                    return (
+                      <div key={v.id} className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <SpeciesAvatar species={v.especie} size={40} />
+                          <div className="min-w-0">
+                            <p className="font-black text-slate-800 truncate">
+                              {v.mascota} <span className="font-semibold text-slate-500 text-sm">· {v["dueño"]}</span>
+                            </p>
+                            <p className="text-sm font-semibold text-slate-600 truncate">
+                              {v.nombre} · {fmtFecha(v.proxima)}
+                              {v.aviso_enviado && <span className="text-teal-600"> · avisado ✓</span>}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[11px] font-black px-2.5 py-1 rounded-full ${est.cls}`}>{est.label}</span>
+                          <button
+                            onClick={() => setSelectedOwner(owners.find((o) => o.id === v.owner_id) || null)}
+                            className="p-2 bg-white text-teal-600 hover:bg-teal-600 hover:text-white rounded-xl border border-slate-200"
+                            title="Abrir expediente"
+                          >
+                            <ExternalLink size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             {/* FORMULARIOS DUEÑOS Y BUSCADOR */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -2458,7 +3459,11 @@ function App() {
               </h2>
               <button
                 onClick={() =>
-                  window.open(`${API_BASE}/reports/inventory-status/`, "_blank")
+                  downloadExcel(
+                    "/reports/inventory-status/",
+                    {},
+                    `Inventario_${toISODate(new Date())}.xlsx`,
+                  )
                 }
                 className="bg-teal-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-teal-700 hover:scale-[1.02] transition-all shadow-xl shadow-teal-100"
               >
@@ -2477,7 +3482,7 @@ function App() {
                     <ul className="text-rose-600 text-sm font-bold space-y-1">
                       {lowStockProducts.map((p) => (
                         <li key={p.name}>
-                          • {p.name} (Quedan {p.totalQuantity} {p.unit})
+                          • {p.name} (Quedan {p.availableQuantity} {p.unit} vigentes)
                         </li>
                       ))}
                     </ul>
@@ -2486,12 +3491,15 @@ function App() {
                 {expiringProducts.length > 0 && (
                   <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-3xl shadow-sm">
                     <h3 className="text-amber-800 font-black flex items-center gap-2 mb-3">
-                      <Calendar size={20} /> Próximos a Caducar (30 días)
+                      <Calendar size={20} /> Caducados y por caducar (30 días)
                     </h3>
                     <ul className="text-amber-600 text-sm font-bold space-y-1">
                       {expiringProducts.map((p) => (
-                        <li key={p.id}>
-                          • {p.cleanName} (Vence: {p.expiration_date})
+                        <li key={p.id} className={p.caducado ? "text-rose-600" : ""}>
+                          • {p.cleanName} — {p.quantity} {p.unit}{" "}
+                          {p.caducado
+                            ? `(CADUCADO el ${fmtFecha(p.expiration_date)}, no se venderá)`
+                            : `(Vence: ${fmtFecha(p.expiration_date)})`}
                         </li>
                       ))}
                     </ul>
@@ -2543,6 +3551,25 @@ function App() {
                   </select>
                 </div>
 
+                <div className="min-w-[170px]">
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Área
+                  </label>
+                  <select
+                    value={newProduct.area}
+                    onChange={(e) => setNewProduct({ ...newProduct, area: e.target.value })}
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600"
+                    title="Médico, Estética o Tienda. Si eliges Automática, se toma de la categoría."
+                  >
+                    <option value="">
+                      Automática ({AREAS[areaDe({ category: newProduct.category })].label})
+                    </option>
+                    <option value="medico">🩺 Médico</option>
+                    <option value="estetica">✂️ Estética</option>
+                    <option value="tienda">🛍️ Tienda</option>
+                  </select>
+                </div>
+
                 <div className="flex-grow-[2] min-w-[200px]">
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                     Nombre
@@ -2566,6 +3593,7 @@ function App() {
                   </label>
                   <input
                     type="number"
+                    min="0"
                     step="0.01"
                     value={newProduct.price}
                     onChange={(e) =>
@@ -2576,6 +3604,26 @@ function App() {
                   />
                 </div>
 
+                {["Vacuna", "Medicamento"].includes(newProduct.category) && (
+                  <div className="w-36">
+                    <label className="block text-xs font-black text-indigo-500 uppercase tracking-widest mb-2 ml-1">
+                      $ Aplicación
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newProduct.application_price}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, application_price: e.target.value })
+                      }
+                      placeholder="Opcional"
+                      title="Precio fijo que se cobra por cada aplicación, sin importar la dosis"
+                      className="w-full p-4 bg-indigo-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 text-center"
+                    />
+                  </div>
+                )}
+
                 {newProduct.category !== "Servicio" && (
                   <>
                     <div className="w-32">
@@ -2584,6 +3632,7 @@ function App() {
                       </label>
                       <input
                         type="number"
+                        min="0"
                         step="0.01"
                         value={newProduct.quantity}
                         onChange={(e) =>
@@ -2644,6 +3693,7 @@ function App() {
                       </label>
                       <input
                         type="number"
+                        min="0"
                         step="0.01"
                         value={newProduct.min_stock}
                         onChange={(e) =>
@@ -2677,6 +3727,8 @@ function App() {
                           quantity: "",
                           unit: "piezas",
                           price: "",
+                          application_price: "",
+                          area: "",
                           min_stock: "",
                           expiration_date: "",
                         });
@@ -2723,9 +3775,12 @@ function App() {
                           {group.name}
                         </td>
                         <td className="p-6">
-                          <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-600">
-                            {group.category}
-                          </span>
+                          <div className="flex flex-col items-start gap-1">
+                            <CategoryBadge category={group.category} />
+                            <span className="text-[11px] font-bold text-slate-400 pl-1">
+                              Área: {AREAS[areaDe(group)].label}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-6">
                           <span
@@ -2733,23 +3788,55 @@ function App() {
                           >
                             {group.category === "Servicio"
                               ? "∞"
-                              : group.totalQuantity}{" "}
+                              : group.availableQuantity}{" "}
                             <span className="text-sm">
                               {group.category !== "Servicio" ? group.unit : ""}
                             </span>
                           </span>
+                          {group.expiredQuantity > 0 && (
+                            <div className="text-xs font-black text-rose-500 mt-1">
+                              + {group.expiredQuantity} {group.unit} caducado
+                            </div>
+                          )}
                         </td>
-                        <td className="p-6 text-slate-500 font-medium text-sm max-w-[200px]">
-                          {group.allDates.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {group.allDates.map((d, i) => (
-                                <span
-                                  key={i}
-                                  className="bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs"
-                                >
-                                  {d}
-                                </span>
-                              ))}
+                        <td className="p-6 text-slate-500 font-medium text-sm min-w-[240px]">
+                          {group.category !== "Servicio" &&
+                          group.subItems.some((l) => l.quantity > 0) ? (
+                            <div className="flex flex-col gap-1">
+                              {group.subItems
+                                .filter((l) => l.quantity > 0)
+                                .map((l) => {
+                                  const caducado = isExpiredLot(l);
+                                  return (
+                                    <div
+                                      key={l.id}
+                                      className={`flex items-center justify-between gap-2 pl-2 pr-1 py-0.5 rounded-lg text-xs border font-bold ${caducado ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-white border-slate-200 text-slate-600"}`}
+                                    >
+                                      <span>
+                                        {parseFloat(Number(l.quantity).toFixed(2))} {l.unit} ·{" "}
+                                        {l.expiration_date
+                                          ? `${caducado ? "CADUCÓ" : "vence"} ${fmtFecha(l.expiration_date)}`
+                                          : "sin caducidad"}
+                                      </span>
+                                      <span className="flex">
+                                        <button
+                                          onClick={() => openEditLot(group, l)}
+                                          className="p-1 rounded-md text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                                          title="Corregir este lote (cantidad o caducidad)"
+                                        >
+                                          <Edit size={13} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteLot(l)}
+                                          className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                          title="Borrar este lote"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                             </div>
                           ) : (
                             "-"
@@ -2757,8 +3844,22 @@ function App() {
                         </td>
                         <td className="p-6 font-black text-slate-800 text-lg">
                           ${group.price}
+                          {group.application_price != null && (
+                            <div className="text-xs font-black text-indigo-500">
+                              ${group.application_price} por aplicación
+                            </div>
+                          )}
                         </td>
                         <td className="p-6 text-center flex justify-center gap-2">
+                          {group.category !== "Servicio" && (
+                            <button
+                              onClick={() => openAddLot(group)}
+                              className="p-3 text-teal-600 hover:bg-teal-50 rounded-2xl transition-all"
+                              title="Agregar lote nuevo (mercancía que acaba de llegar)"
+                            >
+                              <PlusCircle size={20} />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleEditGroupClick(group)}
                             className="p-3 text-amber-500 hover:bg-amber-50 rounded-2xl transition-all"
@@ -2793,6 +3894,118 @@ function App() {
           </div>
         )}
 
+        {/* --- PANTALLA RECETAS (separada del expediente) --- */}
+        {activeTab === "recetas" && (
+          <div className="animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between md:items-end mb-8 gap-4">
+              <div>
+                <h2 className="text-3xl font-black text-slate-800 flex items-center gap-2">
+                  <FileText className="text-teal-600" /> Recetas
+                </h2>
+                <p className="text-slate-500 font-semibold">
+                  {todasLasRecetas.length} receta(s) guardada(s). Busca por paciente, dueño, folio o medicamento.
+                </p>
+              </div>
+              {/* Nueva receta: elegir paciente */}
+              <div className="flex flex-wrap items-end gap-2 bg-white p-3 rounded-2xl border border-teal-100 shadow-sm">
+                <select
+                  value={recetaPetId}
+                  onChange={(e) => setRecetaPetId(e.target.value)}
+                  className="p-3 bg-slate-50 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500 min-w-[240px]"
+                >
+                  <option value="">Elegir paciente...</option>
+                  {owners
+                    .flatMap((o) => (o.pets || []).map((pet) => ({ pet, owner: o })))
+                    .sort((a, b) => a.pet.name.localeCompare(b.pet.name))
+                    .map(({ pet, owner }) => (
+                      <option key={pet.id} value={pet.id}>
+                        {pet.name} ({formatExpediente(pet.id)}) · {owner.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  disabled={!recetaPetId}
+                  onClick={() => {
+                    const pet = owners.flatMap((o) => o.pets || []).find((x) => String(x.id) === String(recetaPetId));
+                    if (pet) setPrescriptionModal({ isOpen: true, pet, appt: null, text: "" });
+                  }}
+                  className="bg-teal-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-teal-700 transition-all shadow-md disabled:opacity-50"
+                >
+                  <PlusCircle size={18} /> Nueva receta
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 bg-white p-4 rounded-2xl mb-6 border border-slate-100 shadow-sm">
+              <Search className="text-slate-400" size={20} />
+              <input
+                type="text"
+                placeholder="Buscar receta: paciente, dueño, folio (DC-0001), medicamento..."
+                value={recetaSearch}
+                onChange={(e) => setRecetaSearch(e.target.value)}
+                className="bg-transparent border-none outline-none w-full font-bold text-slate-700"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {recetasFiltradas.map(({ appt, pet, owner }) => (
+                <div key={appt.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 flex flex-col">
+                  <div className="flex justify-between items-start gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                      <SpeciesAvatar species={pet.species} size={40} />
+                      <div>
+                        <p className="font-black text-slate-800 text-lg leading-tight">
+                          {pet.name}{" "}
+                          <span className="text-xs font-black text-teal-700 bg-teal-50 px-2 py-0.5 rounded-lg">
+                            {formatExpediente(pet.id)}
+                          </span>
+                        </p>
+                        <p className="text-sm font-semibold text-slate-500">
+                          {owner.name} · {fmtFecha(appt.date)}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-xl text-right">
+                      {appt.reason}
+                    </span>
+                  </div>
+                  <div className="whitespace-pre-wrap text-slate-700 text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100 flex-grow max-h-40 overflow-y-auto">
+                    {appt.prescription_text}
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => setPrescriptionModal({ isOpen: true, pet, appt, text: appt.prescription_text })}
+                      className="flex-1 bg-teal-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-teal-700 flex items-center justify-center gap-2"
+                    >
+                      <Printer size={16} /> Ver / Re-imprimir
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab("home");
+                        setSelectedOwner(owner);
+                      }}
+                      className="px-4 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-200 flex items-center gap-2"
+                      title="Abrir el expediente del paciente"
+                    >
+                      <ExternalLink size={16} /> Expediente
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {recetasFiltradas.length === 0 && (
+                <div className="lg:col-span-2 text-center py-14 bg-white rounded-[2rem] border border-dashed border-slate-200">
+                  <FileText size={48} className="mx-auto text-slate-300 mb-3" />
+                  <p className="text-slate-500 font-bold">
+                    {todasLasRecetas.length === 0
+                      ? "Aún no hay recetas. Elige un paciente arriba y crea la primera."
+                      : "No hay recetas que coincidan con la búsqueda."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* --- PANTALLA POS (CAJA) --- */}
         {activeTab === "pos" && (
           <div className="animate-in fade-in duration-500">
@@ -2803,14 +4016,53 @@ function App() {
               </h2>
               <div className="flex gap-4">
                 {currentUser === "Maru Peña" && (
-                  <button
-                    onClick={() =>
-                      window.open(`${API_BASE}/reports/sales-weekly/`, "_blank")
-                    }
-                    className="bg-emerald-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-md"
-                  >
-                    <FileSpreadsheet size={20} /> Reporte Semanal (Excel)
-                  </button>
+                  <div className="flex flex-wrap items-end gap-3 bg-white/80 p-3 rounded-2xl border border-emerald-100 shadow-sm">
+                    <div>
+                      <label className="block text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 ml-1">
+                        Periodo del reporte
+                      </label>
+                      <select
+                        value={reportPeriod}
+                        onChange={(e) => setReportPeriod(e.target.value)}
+                        className="p-3 bg-slate-50 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="week">Esta semana</option>
+                        <option value="month">Este mes</option>
+                        <option value="lastMonth">Mes anterior</option>
+                        <option value="custom">Elegir fechas...</option>
+                      </select>
+                    </div>
+                    {reportPeriod === "custom" && (
+                      <>
+                        <div className="w-44">
+                          <label className="block text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 ml-1">
+                            Desde
+                          </label>
+                          <SmartDateInput
+                            value={reportStart}
+                            onChange={setReportStart}
+                            className="w-full p-3 bg-slate-50 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div className="w-44">
+                          <label className="block text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 ml-1">
+                            Hasta
+                          </label>
+                          <SmartDateInput
+                            value={reportEnd}
+                            onChange={setReportEnd}
+                            className="w-full p-3 bg-slate-50 rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </>
+                    )}
+                    <button
+                      onClick={handleDownloadSalesReport}
+                      className="bg-emerald-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-md"
+                    >
+                      <FileSpreadsheet size={20} /> Reporte de Ventas (Excel)
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -2822,6 +4074,28 @@ function App() {
                     <PlusCircle className="text-teal-600" /> Nuevo Cargo
                   </h3>
                   <form onSubmit={handleAddToCart} className="space-y-6">
+                    {/* Pestañas por área: cada quien ve solo lo de su área */}
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-2xl" role="tablist">
+                      {[["todas", "Todo", null], ...Object.entries(AREAS).map(([k, a]) => [k, a.label, a.Icon])].map(
+                        ([key, label, Icon]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            role="tab"
+                            aria-selected={posArea === key}
+                            onClick={() => {
+                              setPosArea(key);
+                              setNewSale({ ...newSale, product_key: "" });
+                              setIsFractionalSale(false);
+                            }}
+                            className={`py-2 rounded-xl text-xs font-black flex flex-col items-center gap-0.5 transition-all ${posArea === key ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                          >
+                            {Icon ? <Icon size={16} /> : <PawPrint size={16} />}
+                            {label}
+                          </button>
+                        ),
+                      )}
+                    </div>
                     <div>
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
                         Producto / Servicio
@@ -2838,13 +4112,17 @@ function App() {
                         className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 transition-all"
                       >
                         <option value="">Seleccionar...</option>
-                        {groupedInventory.map((p) => (
+                        {groupedInventory
+                          .filter((p) => !p.name.startsWith("Cargo Extra")) // productos internos
+                          .filter((p) => posArea === "todas" || areaDe(p) === posArea)
+                          .map((p) => (
                           <option
                             key={p.name.toLowerCase()}
                             value={p.name.toLowerCase()}
                           >
                             {p.name} - ${p.price} (Stock:{" "}
-                            {p.category === "Servicio" ? "∞" : p.totalQuantity})
+                            {p.category === "Servicio" ? "∞" : p.availableQuantity}
+                            {p.expiredQuantity > 0 ? ` + ${p.expiredQuantity} caducado` : ""})
                           </option>
                         ))}
                       </select>
@@ -2858,6 +4136,7 @@ function App() {
                             checked={isFractionalSale}
                             onChange={(e) => {
                               setIsFractionalSale(e.target.checked);
+                              setChargeByApplication(true);
                               setFractionAmount("");
                               setTargetMoney("");
                               setNewSale({ ...newSale, quantity: "" });
@@ -2871,19 +4150,33 @@ function App() {
                             }}
                             className="w-5 h-5 rounded text-teal-600 accent-teal-600"
                           />
-                          ¿Vender a Granel / Fracción? (Gramos, ml, sueltas)
+                          {selectedProductGroup.application_price != null
+                            ? "💉 ¿Aplicar dosis / vender fracción?"
+                            : "¿Vender a Granel / Fracción? (Gramos, ml, sueltas)"}
                         </label>
 
                         {isFractionalSale && (
                           <div className="animate-in fade-in zoom-in-95 duration-200 bg-white p-5 rounded-2xl shadow-sm border border-teal-100 flex flex-col gap-4">
+                            {selectedProductGroup.application_price != null && (
+                              <label className="flex items-center gap-3 cursor-pointer font-black text-indigo-800 text-sm bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                                <input
+                                  type="checkbox"
+                                  checked={chargeByApplication}
+                                  onChange={(e) => setChargeByApplication(e.target.checked)}
+                                  className="w-5 h-5 accent-indigo-600"
+                                />
+                                Cobrar precio por aplicación (${selectedProductGroup.application_price})
+                              </label>
+                            )}
                             {/* CALCULADORA INVERSA */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                              <div>
+                              <div className={selectedProductGroup.application_price != null && chargeByApplication ? "hidden" : ""}>
                                 <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 ml-1 block">
                                   ¿El cliente pide por dinero? ($)
                                 </label>
                                 <input
                                   type="number"
+                                  min="0" step="any"
                                   value={targetMoney}
                                   onChange={(e) => {
                                     const money = e.target.value;
@@ -2905,10 +4198,13 @@ function App() {
                               </div>
                               <div>
                                 <label className="text-[10px] font-black text-teal-700 uppercase tracking-widest mb-1 ml-1 block">
-                                  Capacidad (Ej. 1kg = 1000g)
+                                  {selectedProductGroup.application_price != null && chargeByApplication
+                                    ? "Contenido del frasco (ej. ml)"
+                                    : "Capacidad (Ej. 1kg = 1000g)"}
                                 </label>
                                 <input
                                   type="number"
+                                  min="0.01" step="any"
                                   value={fractionCapacity}
                                   onChange={(e) =>
                                     setFractionCapacity(e.target.value)
@@ -2921,14 +4217,21 @@ function App() {
                             {/* CAMPO DE PESO REAL (LA BÁSCULA) */}
                             <div>
                               <label className="text-xs font-black text-teal-600 uppercase tracking-widest mb-2 ml-1 block">
-                                ⚖️ Peso Real en Báscula (
-                                {["kg", "L"].includes(selectedProductGroup.unit)
-                                  ? "Gramos/ml"
-                                  : "Unidades"}
-                                )
+                                {selectedProductGroup.application_price != null && chargeByApplication ? (
+                                  "💉 Cantidad aplicada (misma unidad que el contenido)"
+                                ) : (
+                                  <>
+                                    ⚖️ Peso Real en Báscula (
+                                    {["kg", "L"].includes(selectedProductGroup.unit)
+                                      ? "Gramos/ml"
+                                      : "Unidades"}
+                                    )
+                                  </>
+                                )}
                               </label>
                               <input
                                 type="number"
+                                min="0.01"
                                 step="0.01"
                                 value={fractionAmount}
                                 onChange={(e) =>
@@ -2942,6 +4245,48 @@ function App() {
                         )}
                       </div>
                     )}
+
+                    {/* 💉 Cartilla: ¿a qué paciente se aplicó? (vacunas y medicamentos) */}
+                    {selectedProductGroup &&
+                      ["Vacuna", "Medicamento"].includes(selectedProductGroup.category) && (
+                        <div className="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 space-y-3">
+                          <label className="text-xs font-black text-indigo-700 uppercase tracking-widest ml-1 block">
+                            💉 Anotar en la cartilla de… (opcional)
+                          </label>
+                          <select
+                            value={salePetId}
+                            onChange={(e) => {
+                              setSalePetId(e.target.value);
+                              setSaleIntervalo(selectedProductGroup.category === "Vacuna" ? "1y" : "3m");
+                            }}
+                            className="w-full p-3 bg-white rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="">No anotar</option>
+                            {owners
+                              .flatMap((o) => (o.pets || []).map((pet) => ({ pet, owner: o })))
+                              .sort((a, b) => a.pet.name.localeCompare(b.pet.name))
+                              .map(({ pet, owner }) => (
+                                <option key={pet.id} value={pet.id}>
+                                  {pet.name} ({formatExpediente(pet.id)}) · {owner.name}
+                                </option>
+                              ))}
+                          </select>
+                          {salePetId && (
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-bold text-indigo-800 whitespace-nowrap">Próxima dosis:</span>
+                              <select
+                                value={saleIntervalo}
+                                onChange={(e) => setSaleIntervalo(e.target.value)}
+                                className="flex-1 p-2.5 bg-white rounded-xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                              >
+                                {INTERVALOS.filter(([k]) => k !== "custom").map(([k, l]) => (
+                                  <option key={k} value={k}>{l}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                     <div className="flex gap-4">
                       {/* Ocultamos la cantidad normal si están vendiendo a granel para no confundir */}
@@ -3030,6 +4375,7 @@ function App() {
                           </label>
                           <input
                             type="number"
+                            min="0.01"
                             step="0.01"
                             value={extraDetails.amount}
                             onChange={(e) =>
@@ -3090,8 +4436,15 @@ function App() {
                       <p className="text-3xl font-black">
                         ${todayTotalRevenue.toFixed(2)}
                       </p>
-                      <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden mt-4">
-                        <div className="h-full bg-emerald-500 w-3/4"></div>
+                      <div className="mt-3 space-y-1">
+                        {Object.entries(AREAS).map(([k, a]) => (
+                          <div key={k} className="flex justify-between text-xs font-bold text-slate-300">
+                            <span className="flex items-center gap-1.5">
+                              <a.Icon size={12} /> {a.label}
+                            </span>
+                            <span>${(ventasHoyPorArea[k] || 0).toFixed(2)}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -3150,6 +4503,12 @@ function App() {
                               <p className="font-black text-slate-800 text-lg">
                                 {item.name}
                               </p>
+                              {item.petName && (
+                                <p className="text-xs font-bold text-indigo-600">
+                                  💉 Para la cartilla de {item.petName}
+                                  {item.next_due_date ? ` · próxima ${fmtFecha(item.next_due_date)}` : ""}
+                                </p>
+                              )}
                               <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
                                 {item.quantity} {item.unit} •{" "}
                                 {item.payment_method}
@@ -3229,6 +4588,7 @@ function App() {
                       <button
                         onClick={handleCheckoutCart}
                         disabled={
+                          isCheckingOut ||
                           cart.length === 0 ||
                           (cart.some((i) => i.payment_method === "Efectivo") &&
                             (!amountPaid ||
@@ -3236,9 +4596,63 @@ function App() {
                         }
                         className="w-full xl:w-auto bg-slate-900 text-white px-10 py-5 rounded-[1.5rem] text-xl font-black hover:bg-black transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 shadow-2xl"
                       >
-                        Confirmar Venta
+                        {isCheckingOut ? "Registrando..." : "Confirmar Venta"}
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* --- VENTAS DE HOY (para revisar y, si hubo un error, cancelar) --- */}
+                <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                  <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                    <h3 className="text-xl font-black flex items-center gap-3 text-slate-800">
+                      <Clock className="text-teal-600" size={22} /> Ventas de hoy
+                    </h3>
+                    <span className="text-sm font-bold text-slate-500">
+                      {todayTickets.filter((t) => !t.cancelled).length} cobro(s)
+                    </span>
+                  </div>
+                  <div className="p-6 space-y-3 max-h-[420px] overflow-y-auto">
+                    {todayTickets.length === 0 && (
+                      <p className="text-center text-slate-400 font-bold py-6">
+                        Aún no hay ventas hoy.
+                      </p>
+                    )}
+                    {todayTickets.map((t) => (
+                      <div
+                        key={t.key}
+                        className={`flex justify-between items-center gap-4 p-4 rounded-2xl border ${t.cancelled ? "bg-slate-50 border-slate-200 opacity-70" : "bg-white border-slate-100"}`}
+                      >
+                        <div className="min-w-0">
+                          <p className={`font-bold text-slate-700 text-sm ${t.cancelled ? "line-through" : ""}`}>
+                            {t.items.join(", ")}
+                          </p>
+                          <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                            {new Date(t.date).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}{" "}
+                            · {t.methods}
+                            {t.cancelled && (
+                              <span className="text-rose-600 font-black">
+                                {" "}· Cancelada{t.rows[0].cancel_reason ? `: ${t.rows[0].cancel_reason}` : ""}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`text-lg font-black ${t.cancelled ? "text-slate-400 line-through" : "text-slate-800"}`}>
+                            ${t.total.toFixed(2)}
+                          </span>
+                          {isAdmin && !t.cancelled && (
+                            <button
+                              onClick={() => handleCancelTicket(t)}
+                              className="px-3 py-2 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-500 hover:text-white rounded-xl transition-all"
+                              title="Cancelar esta venta y regresar el stock"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -3315,6 +4729,7 @@ function App() {
                     >
                       <div className="flex justify-between items-start mb-4">
                         <h4 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                          <SpeciesAvatar species={p.species} />
                           {p.name}
                           <span className="bg-teal-100 text-teal-800 px-3 py-1 rounded-xl text-xs font-black tracking-widest border border-teal-200">
                             EXP: {formatExpediente(p.id)}
@@ -3378,18 +4793,99 @@ function App() {
                           <FileText size={16} /> + Receta Rápida
                         </button>
                         <button
-                          onClick={() =>
-                            setPrescriptionHistoryModal({
-                              isOpen: true,
-                              pet: p,
-                            })
-                          }
+                          onClick={() => {
+                            setRecetaSearch(formatExpediente(p.id));
+                            setSelectedOwner(null);
+                            setActiveTab("recetas");
+                          }}
                           className="p-2 bg-teal-50 text-teal-600 hover:bg-teal-100 rounded-xl transition-all font-bold text-sm flex items-center gap-1"
-                          title="Ver todas las recetas pasadas"
+                          title="Ver las recetas de este paciente en la pestaña Recetas"
                         >
-                          <Archive size={16} /> 📜 Historial
+                          <Archive size={16} /> 📜 Sus recetas
                         </button>
                       </div>
+
+                      {/* 💉 CARTILLA: vacunas y desparasitación */}
+                      {(() => {
+                        const registros = p.preventivos || [];
+                        const vistos = new Set();
+                        const vigentes = new Set(
+                          registros
+                            .filter((r) => {
+                              const k = r.nombre.trim().toLowerCase();
+                              if (vistos.has(k)) return false;
+                              vistos.add(k);
+                              return true;
+                            })
+                            .map((r) => r.id),
+                        );
+                        return (
+                          <div className="mb-6 bg-indigo-50/40 border border-indigo-100 rounded-2xl p-4">
+                            <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                              <h5 className="font-black text-indigo-800 flex items-center gap-2 text-sm">
+                                <Syringe size={16} /> Vacunas y desparasitación
+                              </h5>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => abrirPreventivo(p)}
+                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black flex items-center gap-1 hover:bg-indigo-700"
+                                >
+                                  <PlusCircle size={14} /> Registrar
+                                </button>
+                                {registros.length > 0 && (
+                                  <button
+                                    onClick={() => printCartilla(p, selectedOwner)}
+                                    className="px-3 py-1.5 bg-white text-indigo-700 rounded-xl text-xs font-black flex items-center gap-1 border border-indigo-200 hover:bg-indigo-50"
+                                  >
+                                    <Printer size={14} /> Cartilla
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {registros.length === 0 ? (
+                              <p className="text-xs text-slate-500 font-semibold italic">
+                                Sin registros. Anota aquí cada vacuna o desparasitación con su próxima dosis y el sistema avisará cuando toque.
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {registros.map((r) => {
+                                  const vigente = vigentes.has(r.id);
+                                  const est = estadoDosis(r.next_due_date);
+                                  const { Icon } = TIPOS_PREVENTIVO[r.tipo] || TIPOS_PREVENTIVO.otro;
+                                  return (
+                                    <div
+                                      key={r.id}
+                                      className={`flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border ${vigente ? "border-indigo-100" : "border-slate-100 opacity-60"}`}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <Icon size={16} className="text-indigo-500 shrink-0" />
+                                        <div className="min-w-0">
+                                          <p className="font-bold text-slate-800 text-sm truncate">{r.nombre}</p>
+                                          <p className="text-[11px] font-semibold text-slate-500">
+                                            Aplicada {fmtFecha(r.applied_date)}
+                                            {r.next_due_date ? ` · Próxima ${fmtFecha(r.next_due_date)}` : ""}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <span className={`text-[10px] font-black px-2 py-1 rounded-full ${vigente ? est.cls : "bg-slate-100 text-slate-400"}`}>
+                                          {vigente ? est.label : "Historial"}
+                                        </span>
+                                        <button onClick={() => abrirPreventivo(p, r)} className="p-1.5 text-slate-400 hover:text-amber-600" title="Editar">
+                                          <Edit size={14} />
+                                        </button>
+                                        <button onClick={() => borrarPreventivo(r)} className="p-1.5 text-slate-400 hover:text-rose-600" title="Borrar">
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {p.appointments && p.appointments.length > 0 ? (
                         <div className="space-y-6 mt-6">
@@ -3752,51 +5248,439 @@ function App() {
         </div>
       )}
 
-      {showUpcomingAppts && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-50 p-4" onClick={() => setShowUpcomingAppts(false)}>
-          <div className="bg-white rounded-[3rem] w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-amber-500 p-8 text-white flex justify-between items-center z-10 shadow-md">
+      {/* --- CENTRO DE AVISOS (campanita) --- */}
+      {showAvisos && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-50 p-4"
+          onClick={() => setShowAvisos(false)}
+        >
+          <div
+            className="bg-white rounded-[3rem] w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-amber-500 p-7 text-white flex justify-between items-center z-10 shadow-md">
               <div>
                 <h2 className="text-2xl font-black flex items-center gap-3">
-                  <Bell size={28} /> Próximas Citas (en 3 días)
+                  <Bell size={26} /> Centro de avisos
                 </h2>
-                <p className="text-amber-100 font-bold text-sm mt-1">
-                  Fecha a recordar: {formattedFutureDate}
+                <p className="text-amber-50 font-bold text-sm mt-1">
+                  WhatsApp para los dueños y notificaciones en este teléfono.
                 </p>
               </div>
-              <button onClick={() => setShowUpcomingAppts(false)} className="p-2 bg-white/20 hover:bg-rose-500 rounded-xl transition-all">
+              <button
+                onClick={() => setShowAvisos(false)}
+                className="p-2 bg-white/20 hover:bg-rose-500 rounded-xl transition-all"
+              >
                 <X size={24} />
               </button>
             </div>
-            <div className="p-8 space-y-4">
-              {upcomingAppointmentsList.length > 0 ? (
-                upcomingAppointmentsList.map((appt) => (
-                  <div key={appt.id} className="p-5 border-l-4 border-amber-400 bg-amber-50 rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-sm gap-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-black tracking-widest">{appt.time}</span>
-                        <span className="font-bold text-slate-700 text-sm">{appt.reason}</span>
-                      </div>
-                      <p className="text-lg font-black text-slate-800">
-                        {appt.petName} <span className="text-sm font-medium text-slate-500">Dueño: {appt.ownerName}</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleSendWhatsAppReminder(appt.ownerPhone, appt.ownerName, appt.petName, appt.reason, appt.date, appt.time)}
-                      className="w-full sm:w-auto p-3 bg-[#25D366] text-white hover:bg-[#128C7E] rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm font-black"
-                    >
-                      <Phone size={16} /> Avisar por WhatsApp
+
+            <div className="p-7 space-y-7">
+              {/* --- Notificaciones en este dispositivo --- */}
+              <section className="bg-teal-50/60 border border-teal-100 rounded-[2rem] p-5">
+                <h3 className="font-black text-slate-800 flex items-center gap-2 mb-2">
+                  <Phone size={18} className="text-teal-600" /> Notificaciones en este dispositivo
+                </h3>
+                {pushEstado === "revisando" && <p className="text-sm text-slate-500 font-semibold">Revisando…</p>}
+                {pushEstado === "activado" && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm font-bold text-teal-700 flex-1 min-w-[200px]">
+                      ✅ Activadas. Aquí te llegarán las citas nuevas, los registros de la Sala de Espera y el resumen de cada mañana.
+                    </p>
+                    <button onClick={probarPush} className="px-4 py-2 bg-teal-600 text-white rounded-xl font-bold text-sm hover:bg-teal-700">
+                      Enviar prueba
+                    </button>
+                    <button onClick={desactivarPush} className="px-4 py-2 bg-white text-slate-600 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50">
+                      Desactivar
                     </button>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-10">
-                  <div className="bg-slate-100 p-4 rounded-full inline-block mb-4"><Bell size={40} className="text-slate-400" /></div>
-                  <p className="text-slate-500 font-bold text-lg">No hay pacientes agendados para dentro de 3 días.</p>
-                </div>
-              )}
+                )}
+                {pushEstado === "apagado" && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm font-semibold text-slate-600 flex-1 min-w-[200px]">
+                      Recibe en este teléfono un aviso de cada cita nueva y el resumen de la mañana, aunque la app esté cerrada.
+                    </p>
+                    <button onClick={activarPush} className="px-5 py-2.5 bg-teal-600 text-white rounded-xl font-black text-sm hover:bg-teal-700 shadow-md">
+                      🔔 Activar notificaciones
+                    </button>
+                  </div>
+                )}
+                {pushEstado === "instalar-ios" && (
+                  <div className="text-sm font-semibold text-slate-600 space-y-1">
+                    <p className="font-bold text-slate-700">En iPhone/iPad primero hay que instalar la app:</p>
+                    <p>1. Abre esta página en <b>Safari</b>.</p>
+                    <p>2. Toca el botón <b>Compartir</b> (cuadrito con flecha ⬆️) → <b>Agregar a inicio</b>.</p>
+                    <p>3. Abre <b>Dogs & Cats</b> desde el ícono nuevo, inicia sesión y vuelve a esta campanita.</p>
+                  </div>
+                )}
+                {pushEstado === "bloqueado" && (
+                  <p className="text-sm font-semibold text-rose-600">
+                    Las notificaciones están bloqueadas para esta página. Actívalas en los ajustes del teléfono
+                    (iPhone: Ajustes → Notificaciones → Dogs & Cats; Android: mantén presionado el ícono → Información → Notificaciones).
+                  </p>
+                )}
+                {pushEstado === "no-soportado" && (
+                  <p className="text-sm font-semibold text-slate-500">
+                    Este navegador no permite notificaciones. Usa Chrome (Android/PC) o la app instalada en iPhone.
+                  </p>
+                )}
+                {pushEstado === "no-configurado" && (
+                  <p className="text-sm font-semibold text-slate-500">
+                    Las notificaciones aún no están configuradas en el servidor.
+                  </p>
+                )}
+              </section>
+
+              {/* --- WhatsApp por mandar --- */}
+              <section>
+                <h3 className="font-black text-slate-800 flex items-center gap-2 mb-3">
+                  <Clipboard size={18} className="text-amber-500" /> Por avisar a los dueños
+                  <span className="text-xs font-bold text-slate-400">({avisos.length})</span>
+                </h3>
+                {avisos.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-[2rem]">
+                    <p className="text-3xl mb-2">🎉</p>
+                    <p className="text-slate-500 font-bold">Todo al día: no hay avisos pendientes.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {avisos.map((a) => (
+                      <div
+                        key={`${a.tipo}-${a.appt_id ?? a.record_id}`}
+                        className={`p-4 rounded-2xl border-l-4 shadow-sm ${a.tipo === "confirmacion" ? "bg-emerald-50 border-emerald-400" : a.tipo === "preventivo" ? "bg-indigo-50 border-indigo-400" : "bg-amber-50 border-amber-400"}`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className={`inline-block text-[11px] font-black px-2.5 py-0.5 rounded-full mb-1 ${a.tipo === "confirmacion" ? "bg-emerald-200 text-emerald-800" : a.tipo === "preventivo" ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                              {a.tipo === "confirmacion" ? "Confirmar cita nueva" : a.tipo === "preventivo" ? "💉 Vacuna / desparasitación" : "Recordatorio"}
+                            </span>
+                            <p className="font-black text-slate-800">
+                              {a.mascota} <span className="font-semibold text-slate-500 text-sm">· {a["dueño"]}</span>
+                            </p>
+                            <p className="text-sm font-semibold text-slate-600 first-letter:uppercase">
+                              {a.tipo === "preventivo" ? "Le toca el " : ""}
+                              {new Date(`${a.fecha}T12:00:00`).toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                              {a.hora ? ` a las ${a.hora}` : ""} · {a.motivo}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            {a.telefono ? (
+                              <button
+                                onClick={() => enviarAvisoWhatsApp(a)}
+                                className="px-4 py-2.5 bg-[#25D366] text-white hover:bg-[#128C7E] rounded-xl font-black text-sm flex items-center gap-2 shadow-sm"
+                              >
+                                <Phone size={16} /> WhatsApp
+                              </button>
+                            ) : (
+                              <span className="px-3 py-2 text-xs font-bold text-slate-400 bg-white rounded-xl border">
+                                Sin teléfono
+                              </span>
+                            )}
+                            <button
+                              onClick={() => marcarAvisoEnviado(a)}
+                              className="px-3 py-2.5 bg-white text-slate-500 hover:text-slate-800 rounded-xl font-bold text-xs border border-slate-200"
+                              title="Ya se le avisó por otro medio (en persona, llamada…)"
+                            >
+                              Ya se avisó
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* --- MODAL ADMINISTRACIÓN DE USUARIOS (solo administradora) --- */}
+      {showUsersModal && isAdmin && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-[90] p-4"
+          onClick={() => setShowUsersModal(false)}
+        >
+          <div
+            className="bg-white rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-indigo-600 p-8 text-white flex justify-between items-center z-10">
+              <div>
+                <h2 className="text-2xl font-black flex items-center gap-2">
+                  <Key size={26} /> Usuarios del Sistema
+                </h2>
+                <p className="text-indigo-100 font-bold text-sm mt-1">
+                  Solo la administradora puede crear o eliminar usuarios.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowUsersModal(false)}
+                className="p-2 bg-white/20 hover:bg-rose-500 rounded-xl transition-all"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-8">
+              <div className="space-y-3">
+                {usersList.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 border border-slate-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <User className="text-slate-400" size={20} />
+                      <span className="font-black text-slate-800">{u.username}</span>
+                      {u.is_admin && (
+                        <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                          Administradora
+                        </span>
+                      )}
+                    </div>
+                    {!u.is_admin && (
+                      <button
+                        onClick={() => handleDeleteUser(u)}
+                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                        title="Eliminar usuario"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <form
+                onSubmit={handleCreateUser}
+                className="space-y-4 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100"
+              >
+                <h3 className="text-lg font-black text-slate-800">Crear nuevo usuario</h3>
+                <input
+                  type="text"
+                  placeholder="Nombre de usuario"
+                  value={newUserForm.username}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })}
+                  required
+                  minLength={3}
+                  autoComplete="off"
+                  className="w-full p-4 bg-white border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                />
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="password"
+                    placeholder="Contraseña (mín. 6)"
+                    value={newUserForm.password}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                    required
+                    autoComplete="new-password"
+                    className="w-full p-4 bg-white border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirmar contraseña"
+                    value={newUserForm.confirm}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, confirm: e.target.value })}
+                    required
+                    autoComplete="new-password"
+                    className="w-full p-4 bg-white border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-indigo-600 uppercase tracking-widest mb-2 ml-1">
+                    🔒 Tu contraseña (para autorizar)
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Contraseña de la administradora"
+                    value={newUserForm.admin_password}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, admin_password: e.target.value })}
+                    required
+                    autoComplete="current-password"
+                    className="w-full p-4 bg-white border-2 border-indigo-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg"
+                >
+                  Crear Usuario
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL AGREGAR / CORREGIR LOTE --- */}
+      {lotModal.open && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-[90] p-4"
+          onClick={() => setLotModal(emptyLotModal)}
+        >
+          <form
+            onSubmit={handleSaveLot}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden"
+          >
+            <div className={`p-7 text-white ${lotModal.mode === "add" ? "bg-teal-600" : "bg-amber-500"}`}>
+              <h2 className="text-2xl font-black flex items-center gap-2">
+                {lotModal.mode === "add" ? <PlusCircle size={24} /> : <Edit size={24} />}
+                {lotModal.mode === "add" ? "Agregar lote" : "Corregir lote"}
+              </h2>
+              <p className="font-bold text-sm mt-1 opacity-90">
+                {lotModal.group?.name} · precio ${lotModal.group?.price}
+              </p>
+            </div>
+            <div className="p-7 space-y-5">
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                  {lotModal.mode === "add" ? "Cantidad que llegó" : "Cantidad correcta"} ({lotModal.group?.unit})
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  autoFocus
+                  required
+                  value={lotModal.quantity}
+                  onChange={(e) => setLotModal({ ...lotModal, quantity: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-black text-xl outline-none focus:ring-2 focus:ring-teal-600 text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                  Caducidad (opcional)
+                </label>
+                <SmartDateInput
+                  value={lotModal.expiration}
+                  onChange={(val) => setLotModal({ ...lotModal, expiration: val })}
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-teal-600 text-slate-700"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLotModal(emptyLotModal)}
+                  className="w-1/3 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={`w-2/3 text-white font-black py-4 rounded-2xl shadow-lg ${lotModal.mode === "add" ? "bg-teal-600 hover:bg-teal-700" : "bg-amber-500 hover:bg-amber-600"}`}
+                >
+                  {lotModal.mode === "add" ? "Agregar al almacén" : "Guardar corrección"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* --- MODAL CARTILLA: registrar vacuna / desparasitación --- */}
+      {preventivoModal.open && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-[85] p-4"
+          onClick={() => setPreventivoModal(emptyPreventivo)}
+        >
+          <form
+            onSubmit={guardarPreventivo}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-[2.5rem] w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-300"
+          >
+            <div className="p-7 bg-indigo-600 text-white">
+              <h2 className="text-2xl font-black flex items-center gap-2">
+                <Syringe size={24} /> {preventivoModal.record ? "Editar registro" : "Registrar en la cartilla"}
+              </h2>
+              <p className="font-bold text-sm mt-1 text-indigo-100">
+                Paciente: {preventivoModal.pet?.name} ({preventivoModal.pet && formatExpediente(preventivoModal.pet.id)})
+              </p>
+            </div>
+            <div className="p-7 space-y-5">
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(TIPOS_PREVENTIVO).map(([k, t]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setPreventivoModal({ ...preventivoModal, tipo: k })}
+                    className={`p-3 rounded-2xl text-xs font-black flex flex-col items-center gap-1 border-2 transition-all ${preventivoModal.tipo === k ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-100 text-slate-500 hover:border-slate-200"}`}
+                  >
+                    <t.Icon size={20} /> {t.label}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre</label>
+                <input
+                  list="sugerencias-preventivo"
+                  required
+                  value={preventivoModal.nombre}
+                  onChange={(e) => setPreventivoModal({ ...preventivoModal, nombre: e.target.value })}
+                  placeholder="Ej. Rabia, Séxtuple, Desparasitante interno…"
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <datalist id="sugerencias-preventivo">
+                  {SUGERENCIAS_PREVENTIVO.map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha de aplicación</label>
+                <SmartDateInput
+                  required
+                  value={preventivoModal.aplicada}
+                  onChange={(val) => setPreventivoModal({ ...preventivoModal, aplicada: val })}
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Próxima dosis</label>
+                <select
+                  value={preventivoModal.intervalo}
+                  onChange={(e) => setPreventivoModal({ ...preventivoModal, intervalo: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
+                >
+                  {INTERVALOS.map(([k, l]) => (
+                    <option key={k} value={k}>{l}</option>
+                  ))}
+                </select>
+                {preventivoModal.intervalo === "custom" ? (
+                  <div className="mt-3">
+                    <SmartDateInput
+                      value={preventivoModal.proxima}
+                      onChange={(val) => setPreventivoModal({ ...preventivoModal, proxima: val })}
+                      className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
+                    />
+                  </div>
+                ) : (
+                  sumarIntervalo(preventivoModal.aplicada, preventivoModal.intervalo) && (
+                    <p className="text-sm font-bold text-indigo-700 mt-2 ml-1">
+                      Tocará el {fmtFecha(sumarIntervalo(preventivoModal.aplicada, preventivoModal.intervalo))}
+                    </p>
+                  )
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Notas (opcional)</label>
+                <input
+                  value={preventivoModal.notas}
+                  onChange={(e) => setPreventivoModal({ ...preventivoModal, notas: e.target.value })}
+                  placeholder="Ej. lote 123, laboratorio, dosis…"
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setPreventivoModal(emptyPreventivo)} className="w-1/3 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200">
+                  Cancelar
+                </button>
+                <button type="submit" className="w-2/3 bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-lg">
+                  {preventivoModal.record ? "Guardar cambios" : "Anotar en la cartilla"}
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       )}
     </div>

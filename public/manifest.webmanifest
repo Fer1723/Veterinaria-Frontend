@@ -1,0 +1,17 @@
+{
+  "name": "Dogs & Cats · Consultorio Veterinario",
+  "short_name": "Dogs & Cats",
+  "description": "Sistema de la veterinaria Dogs & Cats: clínica, almacén y caja.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef8f6",
+  "theme_color": "#0d9488",
+  "lang": "es-MX",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
